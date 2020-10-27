@@ -3,8 +3,7 @@ import { List, ListItem, Card } from 'framework7-react';
 import { dict } from '../../Dict';
 import { Chart } from 'react-charts'
 import { color } from "d3";
-import TaskList from "../tasks/list"
-import WorkList from "../tasks/workList"
+
 const ProfileShow = (props) => {
 
   if (props.profile) {
@@ -21,10 +20,10 @@ const ProfileShow = (props) => {
 
         </List>
         <Card>
-          <TaskList tasks={props.profile.the_tasks} header={dict.tasks} sortChange={props.sortChange} />
+         
         </Card>
         <Card>
-          <WorkList works={props.profile.the_works} header={dict.works} sortChange={props.sortChange} />
+          
         </Card>
       </React.Fragment>
     )

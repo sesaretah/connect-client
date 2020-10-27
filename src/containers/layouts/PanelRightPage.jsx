@@ -67,81 +67,34 @@ export default class PanelRightPage extends Component {
     return result
   }
 
-  logged_in(token) {
-    if (token) {
-      return (
-        <React.Fragment>
-          <BlockTitle> <i className="va ml-5 fa fa-tachometer"></i>{dict.dashboard}</BlockTitle>
-          <List className='fs-13'>
-          <ListItem link="/" view="#main-view" panelClose>
-              <i className="va ml-5 fa fa-home"></i>
-              <span>{dict.home}</span>
-            </ListItem>
 
-            <ListItem link="/tasks/" view="#main-view" panelClose>
-              <i className="va ml-5 fa fa-tasks"></i>
-              <span>{dict.tasks}</span>
-            </ListItem>
-
-            <ListItem link="/time_sheets/" view="#main-view" panelClose>
-              <i className="va ml-5 fa fa-file-excel-o"></i>
-              <span>{dict.time_sheets}</span>
-            </ListItem>
-
-
-            <ListItem link="/notifications/" ignoreCache={false} reloadCurrent={false} view="#main-view" panelClose>
-              <i className="va ml-5 fa fa-circle-o-notch"></i>
-              <span>{dict.notifications}</span>
-            </ListItem>
-          </List>
-
-          <BlockTitle><i className="va ml-5 fa fa-cogs"></i>{dict.user_settings}</BlockTitle>
-          <List>
-            <ListItem link="/settings/" ignoreCache={true} view="#main-view" panelClose>
-              <i className="va ml-5 fa fa-user-secret"></i>
-              <span>{dict.privacy}</span>
-            </ListItem>
-            <ListItem link="/profiles/" view="#main-view" panelClose>
-              <i className="va ml-5 fa fa-user-circle-o"></i>
-              <span>{dict.profile}</span>
-            </ListItem>
-            <ListItem view="#main-view" panelClose onClick={this.logout}>
-              <i className="va ml-5 fa fa-power-off"></i>
-              <span>{dict.logout}</span>
-            </ListItem>
-          </List>
-
-
-          <BlockTitle> <i className="va ml-5 fa fa-cog"></i>{dict.settings}</BlockTitle>
-          <List className='fs-13'>
-            {this.check_ability('change_role', "roles", "shield")}
-
-            {this.check_ability('change_statuses', "statuses", "circle-o")}
-
-            {this.check_ability('add_tags', "tags", "tags")}
-
-            {this.check_ability('change_groups', "groups", "bullseye")}
-          </List>
-        </React.Fragment>
-      )
-    } else {
-      return (
-        <React.Fragment>
-          <BlockTitle>{dict.user_settings}</BlockTitle>
-          <List>
-            <ListItem link="/login/" title={dict.login} view="#main-view" panelClose></ListItem>
-          </List>
-        </React.Fragment>
-      )
-    }
-  }
 
   render() {
     const { token } = this.state;
     return (
       <Page >
-        <Navbar title={dict.tavan} />
-        {this.logged_in(token)}
+        <Navbar title={dict.kian} />
+        <React.Fragment>
+          <BlockTitle> <i className="va ml-5 fa fa-tachometer"></i>{dict.dashboard}</BlockTitle>
+          <List className='fs-13'>
+          <ListItem link="/courses/" view="#main-view" panelClose>
+              <i className="va ml-5 fa fa-home"></i>
+              <span>{dict.home}</span>
+            </ListItem>
+
+
+            <ListItem link="/courses/" view="#main-view" panelClose>
+              <i className="va ml-5 fa fa-list"></i>
+              <span>{dict.courses}</span>
+            </ListItem>
+
+            <ListItem link="/faculties/" view="#main-view" panelClose>
+              <i className="va ml-5 fa fa-list"></i>
+              <span>{dict.faculties}</span>
+            </ListItem>
+          </List>
+
+        </React.Fragment>
       </Page>
     );
   }

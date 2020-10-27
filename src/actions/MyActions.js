@@ -3,7 +3,6 @@ import axios, {put} from 'axios';
 import { conf } from '../conf';
 
 const server= conf.server;
-console.log(server)
 //const server='http://localhost:3001/v1';
 //const server='/v1';
 //const server='http://95.156.255.115/api';
@@ -27,6 +26,7 @@ export function getMultipleList(model, page=1, params={}, token) {
   var queryString = Object.keys(params).map(key => key + '=' + params[key]).join('&');
   axios.get(server + '/'+ model +'?page='+page+'&'+queryString, { headers: {'Content-Type': 'application/json', 'Authorization': "bearer " + token } })
   .then(function (response) {
+    console.log(response)
     dispatcher.dispatch({
       type: "MULTIPLE_LIST_MODEL_SUCCESS",
       list: response.data,

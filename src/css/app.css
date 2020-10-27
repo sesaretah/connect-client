@@ -5,7 +5,10 @@
     url(../fonts/IRANSansWeb.woff) format("woff"),
     url(../fonts/IRANSansWeb.ttf) format("truetype");
 }
-
+body {
+  /* All your regular code including overflow-x: hidden; */
+  position:relative;
+}
 .aurora body {
   font-family: iransans;
 }
@@ -101,8 +104,8 @@
 }
 
 .theme-dark {
-  --f7-page-bg-color: #211429;
-  --f7-navbar-bg-color: #211429;
+  --f7-page-bg-color: #151238;
+  --f7-navbar-bg-color: #151238;
   --f7-navbar-border-color: #635a64;
   --f7-navbar-text-color: #e9cfec;
 
@@ -111,28 +114,28 @@
 
 :root .theme-dark,
 :root.theme-dark {
-  --f7-color-picker-sheet-bg-color: #121212;
-  --f7-color-picker-popup-bg-color: #121212;
+  --f7-color-picker-sheet-bg-color: #151238;
+  --f7-color-picker-popup-bg-color: #151238;
   --f7-color-picker-value-bg-color: rgba(255, 255, 255, 0.1);
   --f7-color-picker-group-bg-color: #000;
   --f7-color-picker-group-value-bg-color: rgba(255, 255, 255, 0.12);
 }
 
 .theme-dark .list ul {
-  --f7-list-bg-color: #443852;
-  --f7-list-border-color: #635a64;
-  --f7-list-item-border-color: #635a64;
+  --f7-list-bg-color: #2b325a;
+  --f7-list-border-color: #5b5a64;
+  --f7-list-item-border-color: #5d5a64;
   color: #f1f1f1;
 }
 
 .theme-dark .block-strong {
-  --f7-block-strong-text-color: #e9cfec;
-  --f7-block-strong-bg-color: #211429;
-  --f7-block-strong-border-color: #5d5c5d;
+  --f7-block-strong-text-color: #f1f3fc;
+  --f7-block-strong-bg-color: #1d1429;
+  --f7-block-strong-border-color: #5c5c5d;
 }
 
 .theme-dark .block-title {
-  --f7-block-title-text-color: #eccfe0;
+  --f7-block-title-text-color: #f1f3fc;
 }
 
 /* Left Panel right border when it is visible by breakpoint */
@@ -662,6 +665,10 @@ margin-left: 2px !important;
   color: black !important;
 }
 
+.f-color-gray {
+  color: rgb(134, 133, 133) !important;
+}
+
 .bg-teal {
   background-color: rgb(97, 177, 214) !important;
 }
@@ -697,16 +704,31 @@ margin-left: 2px !important;
 .mh-90 {
   max-height: 90px !important;
   overflow: scroll;
+  -ms-overflow-style: none;
 }
 
 .h-120 {
   height: 120px !important;
   overflow: scroll;
+  -ms-overflow-style: none;
 }
 
 .h-200 {
   height: 200px !important;
   overflow: scroll;
+  -ms-overflow-style: none;
+}
+
+.mh-90::-webkit-scrollbar {
+  display: none;
+}
+
+.h-120::-webkit-scrollbar {
+  display: none;
+}
+
+.h-200::-webkit-scrollbar {
+  display: none;
 }
 
 
@@ -716,4 +738,8 @@ margin-left: 2px !important;
 
 .home .calendar-day .calendar-day-events { 
   margin-top: -2px;
+}
+
+.home-status  .item-inner .item-text { 
+  margin-top: -8px !important;
 }

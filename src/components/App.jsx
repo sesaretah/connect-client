@@ -20,6 +20,7 @@ export default class extends React.Component {
       token: window.localStorage.getItem('token'),
     }
   }
+  /*
   async componentDidMount() {
     const self = this;      
     const app = self.$f7;
@@ -51,7 +52,7 @@ export default class extends React.Component {
     });
 
 
-  }
+  }*/
   // Framework7 parameters here
 
   render() {

@@ -27,6 +27,7 @@ class ModelStore extends EventEmitter {
   }
 
   listMultipleModel(list){
+    console.log(list)
     this.multipleList = list.data;
     this.klass = list.klass
     this.emit("got_multiple_list");

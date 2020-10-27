@@ -1,69 +1,140 @@
 import React from "react";
-import { Page, Navbar, Row, BlockTitle, Col, Fab, Icon, Card, Link, CardContent, CardHeader } from 'framework7-react';
-import TaskList from "../tasks/list"
-import WorkList from "../tasks/workList"
-import NotificationList from "../notifications/homeList"
-import ReportList from "../reports/homeList"
-import VisitChart from "../visits/timeseries"
+import { Page, Navbar, Row, CardFooter, Col, Fab, Icon, Card, Link, CardContent, CardHeader } from 'framework7-react';
 
+import { defaults, Bar, Pie } from 'react-chartjs-2';
 
 import { dict } from '../../Dict';
 
 const HomeIndex = (props) => {
 
+    function series() {
+        var result = []
+        console.log(props.meetingHistogram)
+        if (props.meetingHistogram && props.meetingHistogram.length > 0) {
+            var colors = ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#20f08b', '#944dab', '#67f71d', '#650512', '#2f5561', '#e4ae5c']
+            var d = []
+            props.meetingHistogram.map((v) => {
+                console.log(v)
+                d.push({ x: new window.ODate(v.day), y: v.count })
+            })
+            result.push({
+                label: dict.person_session,
+                backgroundColor: colors[Math.floor(Math.random() * 10)],
+                borderColor: 'blue',
+                data: d
+            })
+        }
+
+        return result
+
+    }
+
+
+    function bbseries() {
+        var result = []
+        console.log(props.bbMeetingHistogram)
+        if (props.bbMeetingHistogram && props.bbMeetingHistogram.length > 0) {
+            var colors = ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#20f08b', '#944dab', '#67f71d', '#650512', '#2f5561', '#e4ae5c']
+            var d = []
+            props.bbMeetingHistogram.map((v) => {
+                console.log(v)
+                d.push({ x: new window.ODate(v.day), y: v.count })
+            })
+            result.push({
+                label: dict.person_session,
+                backgroundColor: colors[Math.floor(Math.random() * 10)],
+                borderColor: 'blue',
+                data: d
+            })
+        }
+
+        return result
+
+    }
+
     return (
-        <Page onPageAfterIn={props.pageAfterIn.bind(this)}>
+        <Page >
             <Navbar title={dict.home} >
                 <Link panelOpen="right">
                     <Icon f7="bars"></Icon>
                 </Link>
             </Navbar>
             <Row>
-                <Col width='100' tabletWidth='50'>
+                <Col width='100' tabletWidth='100'>
                     <Card>
-                        <TaskList tasks={props.tasks} header={dict.your_tasks} sortChange={props.sortChange} />
-                    </Card>
-                </Col>
-
-                <Col width='100' tabletWidth='50'>
-                    <VisitChart tasksVisits={props.tasksVisits} header={dict.your_newest_works} sortChange={props.sortChange} />
-                </Col>
-
-
-
-            </Row>
-            <Row>
-                <Col width='100' tabletWidth='50'>
-                    <Card>
-                        <WorkList works={props.works} header={dict.your_newest_works} sortChange={props.sortChange} />
-                    </Card>
-                </Col>
-                <Col width='100' tabletWidth='50'>
-                    <Card>
-                        <CardHeader>{dict.events_calendar}</CardHeader>
-                        <CardContent className='home'>
-                        <div className="block block-strong no-padding">
-                            <div id="demo-calendar-inline-container"></div>
-                        </div>
+                        <CardHeader>{dict.adobe_meetings}</CardHeader>
+                        <CardContent className='h-200'>
+                            <Bar
+                                data={{ datasets: series() }}
+                                options={{
+                                    maintainAspectRatio: false,
+                                    showTooltips: false,
+                                    //responsive: true,
+                                    scales: {
+                                        xAxes: [{
+                                            barThickness: 5,
+                                            type: 'time',
+                                            bounds: 'ticks',
+                                            time: {
+                                                unit: "day",
+                                                unitStepSize: 1,
+                                                displayFormats: {
+                                                    day: 'MM/D'
+                                                },
+                                            },
+                                            scaleLabel: {
+                                                display: true,
+                                                labelString: dict.date
+                                            }
+                                        }]
+                                    }
+                                }
+                                }
+                            />
                         </CardContent>
+                        <CardFooter></CardFooter>
                     </Card>
                 </Col>
-            </Row>
-            <Row>
-                <Col width='100' tabletWidth='50'>
-                    <NotificationList notifications={props.notifications} header={dict.your_newest_works} sortChange={props.sortChange} />
+
+                <Col width='100' tabletWidth='100'>
+                    <Card>
+                        <CardHeader>{dict.bb_meetings}</CardHeader>
+                        <CardContent className='h-200'>
+                            <Bar
+                                data={{ datasets: bbseries() }}
+                                options={{
+                                    maintainAspectRatio: false,
+                                    showTooltips: false,
+                                    //responsive: true,
+                                    scales: {
+                                        xAxes: [{
+                                            barThickness: 5,
+                                            type: 'time',
+                                            bounds: 'ticks',
+                                            time: {
+                                                unit: "day",
+                                                unitStepSize: 1,
+                                                displayFormats: {
+                                                    day: 'MM/D'
+                                                },
+                                            },
+                                            scaleLabel: {
+                                                display: true,
+                                                labelString: dict.date
+                                            }
+                                        }]
+                                    }
+                                }
+                                }
+                            />
+                        </CardContent>
+                        <CardFooter></CardFooter>
+                    </Card>
                 </Col>
 
-                <Col width='100' tabletWidth='50'>
-                    <ReportList reports={props.reports} header={dict.your_newest_works} sortChange={props.sortChange} />
-                </Col>
-            </Row>
-
-            <Row>
 
 
             </Row>
-
         </Page>
     )
 }
