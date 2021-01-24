@@ -277,5 +277,10 @@ export const dict = {
   'number_of_bb_meetings': 'تعداد جلسات اتاق تعامل',
   'courses_most_bocc': 'دروس با بیشترین جلسه در اتاق تعامل',
   'courses_most_bocd': 'دروس با بیشترین زمان جلسات اتاق تعامل',
-  'person_session': 'نفر/جلسه'
+  'person_session': 'نفر/جلسه',
+  'session': 'جلسه',
+  'bb_avarage': 'میانگین جلسات اتاق تعامل',
+  'link': 'لینک درس در ایلرن',
+  'sections': 'پردیس ها و دانشکده ها',
+  'facultyId': 'شناسه دانشکده '
 }

@@ -8,7 +8,7 @@ import {
 import ModelStore from "../stores/ModelStore";
 import * as MyActions from "../actions/MyActions";
 import { messaging } from "../init-fcm.js";
-
+import 'framework7-icons';
 
 import routes from '../routes';
 

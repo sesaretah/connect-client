@@ -31,14 +31,17 @@ body {
 }
 /* Custom color theme properties */
 :root {
-
-  --f7-theme-color: #4f2d65;
+  --f7-panel-width: 280px;
+  --f7-theme-color: rgb(18, 26, 97);
   --f7-theme-color-rgb: 90, 200, 250;
   --f7-theme-color-shade: #211429;
-  --f7-theme-color-tint: #211429;
+  --f7-theme-color-tint: #49474b;
   --f7-card-header-font-size: 12px;
 
-  --f7-navbar-height: 40px;
+  --f7-tabbar-link-active-bg-color: #bdbdbd;
+  --f7-tabbar-link-inactive-bg-color: #ebebeb;
+
+  --f7-navbar-height: 42px;
   --f7-list-item-min-height: 40px;
 
   --f7-button-min-width: 28px;
@@ -104,8 +107,8 @@ body {
 }
 
 .theme-dark {
-  --f7-page-bg-color: #151238;
-  --f7-navbar-bg-color: #151238;
+  --f7-page-bg-color: #949494;
+  --f7-navbar-bg-color: #a9a9aa;
   --f7-navbar-border-color: #635a64;
   --f7-navbar-text-color: #e9cfec;
 
@@ -114,15 +117,18 @@ body {
 
 :root .theme-dark,
 :root.theme-dark {
-  --f7-color-picker-sheet-bg-color: #151238;
-  --f7-color-picker-popup-bg-color: #151238;
+  --f7-color-picker-sheet-bg-color: #35343d;
+  --f7-color-picker-popup-bg-color: #35343d;
   --f7-color-picker-value-bg-color: rgba(255, 255, 255, 0.1);
   --f7-color-picker-group-bg-color: #000;
   --f7-color-picker-group-value-bg-color: rgba(255, 255, 255, 0.12);
+
+
+
 }
 
 .theme-dark .list ul {
-  --f7-list-bg-color: #2b325a;
+  --f7-list-bg-color: #6c6c6d;
   --f7-list-border-color: #5b5a64;
   --f7-list-item-border-color: #5d5a64;
   color: #f1f1f1;
@@ -130,7 +136,7 @@ body {
 
 .theme-dark .block-strong {
   --f7-block-strong-text-color: #f1f3fc;
-  --f7-block-strong-bg-color: #1d1429;
+  --f7-block-strong-bg-color: #69696b;
   --f7-block-strong-border-color: #5c5c5d;
 }
 
@@ -742,4 +748,29 @@ margin-left: 2px !important;
 
 .home-status  .item-inner .item-text { 
   margin-top: -8px !important;
+}
+.br-0 {
+  border-radius: 0px !important;
+}
+
+.icon-bar {
+  width: 50px;
+  background-image: linear-gradient(rgb(10, 9, 66), rgb(13, 12, 88), rgb(55, 197, 36));
+  height: inherit;
+  float: right;
+  text-align: center;
+  padding-top: 15px;
+}
+
+.icon-circle {
+  padding-top: 5px;
+  width: 35px;
+  height: 35px;
+  margin: auto;
+  border-radius: 50%;
+  background-color:rgba(141, 139, 139, 0.5);
+}
+
+.z-1 {
+  z-index: -1;
 }

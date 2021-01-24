@@ -20,7 +20,8 @@ import './css/app.css';
 import './css/editor.css';
 import './css/font-awesome.min.css';
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
-
+import './css/board.css';
+import './css/style.css';
 
 import * as serviceWorker from './serviceWorker';
 

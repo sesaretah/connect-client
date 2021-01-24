@@ -5,6 +5,7 @@ import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
 import Framework7 from 'framework7/framework7.esm.bundle'
 import HomeContent from "../../containers/home/index"
+import board from "../../board.js";
 
 export default class HomePage extends Component {
   constructor() {
@@ -15,7 +16,8 @@ export default class HomePage extends Component {
     this.state = {
       token: window.localStorage.getItem('token'),
       bbMeetingHistogram: null,
-      meetingHistogram: null
+      meetingHistogram: null,
+      hourMeetingHistogram: null,
     }
   }
 
@@ -39,6 +41,7 @@ export default class HomePage extends Component {
     if (home && klass === 'Home') {
       this.setState({
         meetingHistogram: home.meeting_histogram,
+        hourMeetingHistogram: home.hour_meeting_histogram,
         bbMeetingHistogram: home.bb_meeting_histogram
       });
     }
@@ -48,10 +51,12 @@ export default class HomePage extends Component {
   render() {
     const { 
       meetingHistogram, bbMeetingHistogram, 
+      hourMeetingHistogram
      } = this.state;
     return (<HomeContent 
       bbMeetingHistogram={bbMeetingHistogram}
       meetingHistogram={meetingHistogram}
+      hourMeetingHistogram={hourMeetingHistogram}
        />)
   }
 }

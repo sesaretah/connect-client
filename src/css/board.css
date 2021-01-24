@@ -1,0 +1,19 @@
+.konvajs-content {
+  border: 0px solid rgb(182, 181, 181);
+  overflow: scroll;
+}
+
+.responsive {
+  width: 100%;
+  height: auto;
+}
+
+.b-radius-0 {
+  border-radius: 0% !important;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -7,14 +7,9 @@ import ProfileIndex from './components/profiles/index';
 import ProfileCreate from './components/profiles/create';
 import ProfileUpdate from './components/profiles/update';
 
-import CourseShow from './components/courses/show';
-import CourseIndex from './components/courses/index';
-import CourseCreate from './components/courses/create';
-import CourseUpdate from './components/courses/update';
 
-import FacultyShow from './components/faculties/show';
-import FacultyIndex from './components/faculties/index';
-
+import RoomShow from './components/rooms/show';
+import RoomIndex from './components/rooms/index';
 
 import Login from './components/users/Login';
 import LoginJwt from './components/users/LoginJwt';
@@ -65,32 +60,15 @@ export default [
     component: ProfileShow,
   },
 
-
   {
-    path: '/courses/',
-    component: CourseIndex,
+    path: '/rooms/',
+    component: RoomIndex,
   },
   {
-    path: '/courses/:courseId/edit',
-    component: CourseUpdate,
-  },
-  {
-    path: '/courses/new',
-    component: CourseCreate,
-  },
-  {
-    path: '/courses/:courseId',
-    component: CourseShow,
+    path: '/rooms/:roomId',
+    component: RoomShow,
   },
 
-  {
-    path: '/faculties/',
-    component: FacultyIndex,
-  },
-  {
-    path: '/faculties/:facultyId',
-    component: FacultyShow,
-  },
   {
     path: '(.*)',
     component: NotFoundPage,
