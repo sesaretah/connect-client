@@ -49,6 +49,7 @@ export default class PanelRightPage extends Component {
     if (this.state.token && this.state.token.length > 10) {
       MyActions.getInstance('users', 'role', this.state.token);
     }
+    console.log('>>>>>>>>>>>>>>>>>', this.props)
   }
 
   getInstance() {
@@ -136,6 +137,19 @@ export default class PanelRightPage extends Component {
     }
   }
 
+  participants() {
+    console.log('>>>>>>>', this.props.participants)
+    if(this.props.participants) {
+      var array = []
+      this.props.participants.map((participant) => {
+        array.push(<ListItem link="/" view="#main-view" panelClose>
+        <i className="va ml-5 fa fa-home"></i>
+        <span>{participant.display}</span>
+      </ListItem>)
+      })
+    }
+  }
+
 
   render() {
     const { token, email, password } = this.state;
@@ -154,6 +168,7 @@ export default class PanelRightPage extends Component {
               <i className="va ml-5 fa fa-home"></i>
               <span>{dict.home}</span>
             </ListItem>
+            {this.participants()}
           </List>
 
           {this.logged_in(this.state.token)}
@@ -164,52 +179,7 @@ export default class PanelRightPage extends Component {
 
         </React.Fragment>
         {this.loginBtn(this.state.token)}
-        <Popup className="demo-popup" opened={this.state.popupOpened} onPopupClosed={() => this.setState({ popupOpened: false })}>
-          <Page>
-            <Navbar title={dict.login}>
-              <NavRight>
-                <Link popupClose>{dict.close}</Link>
-              </NavRight>
-            </Navbar>
-            <List noHairlinesMd>
-              <ListInput
-                label={dict.email}
-                type="text"
-                autofocus={true}
-                //placeholder={dict.enter_your_email}
-                value={this.email}
-                onInput={(e) => {
-                  this.handleChange({ email: e.target.value })
-                }}
-              />
-              <ListInput
-                label={dict.password}
-                type="password"
-                //placeholder={dict.enter_your_password}
-                value={this.password}
-                onInput={(e) => {
-                  this.handleChange({ password: e.target.value })
-                }}
-              />
 
-            </List>
-            <Row>
-              <Col></Col>
-              <Col className="ml-4"><Button className="col btn" fill onClick={this.login}>{dict.login}</Button></Col>
-              <Col className="ml-4"><Button className="col btn" fill onClick={this.signUp}>{dict.sign_up}</Button></Col>
-
-              <Col>
-
-                <Button fill className='fs-11 external f-color-black bg-teal' href="https://auth.ut.ac.ir:8443/cas/login?service=https%3A%2F%kian.ut.ac.ir%2Fusers%2Fservice" animate={false} ignoreCache={true}>{dict.cas}
-                </Button>
-              </Col>
-              <Col>
-
-              </Col>
-            </Row>
-
-          </Page>
-        </Popup>
       </Page>
     );
   }

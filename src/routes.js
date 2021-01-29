@@ -1,6 +1,7 @@
+import App from './components/App.jsx';
 import HomePage from './components/home/index.jsx';
 import NotFoundPage from './containers/layouts/NotFoundPage';
-import PanelRightPage from './containers/layouts/PanelRightPage';
+//import PanelRightPage from './containers/layouts/PanelRightPage';
 
 import ProfileShow from './components/profiles/show';
 import ProfileIndex from './components/profiles/index';
@@ -38,10 +39,11 @@ export default [
     path: '/login_jwt/:token',
     component: LoginJwt,
   },
-  {
-    path: '/panel-right/',
-    component: PanelRightPage,
-  },
+
+  //{
+  //  path: '/panel-right/',
+  //  component: PanelRightPage,
+  //},
 
   {
     path: '/profiles/',

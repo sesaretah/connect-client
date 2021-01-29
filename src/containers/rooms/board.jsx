@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { render } from 'react-dom';
-import { Stage, Layer, Line, Text } from 'react-konva';
+import { Stage, Layer, Line, Circle } from 'react-konva';
 import { Page, Navbar, List, BlockTitle, Card, Fab, Icon, Preloader, Block, CardContent, CardHeader, CardFooter } from 'framework7-react';
 import { dict } from '../../Dict';
 
@@ -13,6 +13,8 @@ class Board extends Component {
         this.fitStageIntoParentContainer = this.fitStageIntoParentContainer.bind(this);
         this.getRelativePointerPosition = this.getRelativePointerPosition.bind(this)
         this.stage = React.createRef();
+        this.throttle = this.throttle.bind(this)
+        this.pointer = this.pointer.bind(this)
 
         this.state = {
             tool: 'pen',
@@ -25,8 +27,23 @@ class Board extends Component {
             scale: 4 / 3,
             scaleX: 1,
             scaleY: 1,
+            lastTime: Date.now(),
+            pointer: {x: 0 , y: 0},
+        
         }
     }
+
+    componentDidUpdate(prevProps) {
+        if (prevProps.line !== this.props.line) {
+            this.setState({ lines: this.state.lines.concat(this.props.line) });
+        }
+        if (prevProps.currentPoint !== this.props.currentPoint) {
+            console.log(this.props.currentPoint)
+            var cord = {x: this.props.currentPoint.x, y: this.props.currentPoint.y}
+            this.setState({pointer: cord})
+            //this.setState({ lines: this.state.lines.concat(this.props.line) });
+        }
+      }
 
     handleMouseDown = (e) => {
         this.setState({ isDrawing: true });
@@ -35,12 +52,18 @@ class Board extends Component {
         const pos = this.getRelativePointerPosition(e.target.getStage());
         var tool = this.state.tool
         var c = { tool, points: [pos.x, pos.y] }
-        this.setState({ lines: this.state.lines.concat(c) });
+        this.setState({ lines: this.state.lines.concat(c) }, () => {
+            //this.props.wsSend({type: 'line', c: c});
+            this.throttle(c, 'line')
+        });
+        
     };
 
     handleMouseMove = (e) => {
         // no drawing - skipping
         if (!this.state.isDrawing) {
+            const point = this.getRelativePointerPosition(e.target.getStage());
+            this.throttle({x: point.x, y: point.y}, 'point')
             return;
         }
         const stage = e.target.getStage();
@@ -51,8 +74,24 @@ class Board extends Component {
 
         // replace last
         this.state.lines.splice(this.state.lines.length - 1, 1, lastLine);
-        this.setState({ lines: this.state.lines.concat() });
+        this.setState({ lines: this.state.lines.concat() }, () => {
+            //console.log(this.state.lines)
+            //this.props.wsSend({type: 'line', c: this.state.lines});
+            this.throttle(this.state.lines, 'line')
+        });
     };
+
+    throttle(c,t) {
+        if(Date.now() - this.state.lastTime > 100 ){
+            this.setState({ lastTime: Date.now()}, () => {
+                this.props.wsSend({type: t, c: c})
+            })
+        }
+    }
+
+    pointer(x,y){
+        return(<Circle x={x} y={y} radius={2} fill="green" />)
+    }
 
     handleMouseUp = () => {
         this.setState({ isDrawing: false });
@@ -133,7 +172,7 @@ class Board extends Component {
                     </select></CardHeader>
                 <CardContent id='board' className='flex-center'>
                     <div style={{ position: 'absolute' }}>
-                        <img src='https://picsum.photos/800/600' class="b-radius-0 " width={this.state.width}></img>
+                        <img src='https://picsum.photos/800/600' class="b-radius-0 " width={this.state.width+'px'}></img>
                     </div>
                     <Stage
                         width='800'
@@ -158,6 +197,9 @@ class Board extends Component {
                                     }
                                 />
                             ))}
+                        </Layer>
+                        <Layer>
+                        <Circle x={this.state.pointer.x} y={this.state.pointer.y} radius={5} fill="green" />
                         </Layer>
 
                     </Stage>

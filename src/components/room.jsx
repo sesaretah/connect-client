@@ -1,17 +1,17 @@
 import React from "react";
-import ModelStore from "../../stores/ModelStore";
-import * as MyActions from "../../actions/MyActions";
+import ModelStore from "../stores/ModelStore";
+import * as MyActions from "../actions/MyActions";
 import {  Panel, View} from 'framework7-react';
 
 
 import $ from 'jquery';
-import { dict } from "../../Dict";
-import { conf } from "../../conf";
-import Janus from "../../janus.js";
-import RoomShow from "../../containers/rooms/show";
+import { dict } from "../Dict";
+import { conf } from "../conf";
+import Janus from "../janus.js";
+import RoomShow from "../containers/rooms/show";
 import { 
     sessionCreate, addParticipant, exisitingParticipant, registerUsername
-   } from "../../components/rooms/janus-tools.js"
+   } from "./janus-tools.js"
 
 //import {newRemoteFeed} from "./newRemoteFeed.js"
 
@@ -19,17 +19,17 @@ export default class Layout extends React.Component {
     constructor() {
         super();
 
-        this.sessionCreate = sessionCreate.bind(this);
-        this.registerUsername = registerUsername.bind(this);
-        this.pageAfterIn = this.pageAfterIn.bind(this);
+        //.sessionCreate = sessionCreate.bind(this);
+        //this.registerUsername = registerUsername.bind(this);
+        //this.pageAfterIn = this.pageAfterIn.bind(this);
         //this.streamAttacher = this.streamAttacher.bind(this);
         //this.streamDettacher = this.streamDettacher.bind(this);
         //this.unmute = this.unmute.bind(this);
-        this.getInstance = this.getInstance.bind(this);
-        this.setInstance = this.setInstance.bind(this);
-        this.addParticipant = addParticipant.bind(this);
+        //this.getInstance = this.getInstance.bind(this);
+        //this.setInstance = this.setInstance.bind(this);
+        //this.addParticipant = addParticipant.bind(this);
         //this.removeParticipant = this.removeParticipant.bind(this);
-        this.exisitingParticipant = exisitingParticipant.bind(this);
+        //this.exisitingParticipant = exisitingParticipant.bind(this);
         //this.findParticpantByUuid = this.findParticpantByUuid.bind(this);
         //this.participantIndex = this.participantIndex.bind(this);
         //this.findParticpantById = this.findParticpantById.bind(this);
@@ -39,6 +39,7 @@ export default class Layout extends React.Component {
 
 
         this.state = {
+            /*
             token: window.localStorage.getItem("token"),
             shortners: null,
             server: conf.janusServer,
@@ -60,7 +61,7 @@ export default class Layout extends React.Component {
             room: null,
             notification: {},
             chats: [],
-            panelOpen: false,
+            panelOpen: false,*/
         };
     }
     componentWillMount() {
@@ -75,15 +76,12 @@ export default class Layout extends React.Component {
     }
 
     componentDidMount() {
-        MyActions.getInstance('rooms', this.$f7route.params['roomId'], this.state.token);
+        MyActions.getInstance('rooms', 1, this.state.token);
         window.addEventListener("beforeunload", this.unPublishData);
         if(window.innerWidth > 960) {
             this.setState({panelOpen: true})
             console.log('>960')
         }
-        const app = this.$f7;
-      
-        console.log('props',   app.panel.get('#panel-r'))
 
 
     }
