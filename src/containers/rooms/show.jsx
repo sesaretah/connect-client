@@ -4,7 +4,7 @@ import { Page, Navbar, Row, Toolbar, Col, Tab, Icon, Card, Link, CardContent, Ca
 
 import { dict } from '../../Dict';
 import Board from "./board";
-import Doc from "./doc";
+import Doc from "./doc.jsx";
 
 
 
@@ -43,10 +43,29 @@ const RoomShow = (props) => {
             </Toolbar>
             <Tabs>
                 <Tab id="tab-1" tabActive={current('tab-1')}>
-                    <Board wsSend={props.wsSend} line={props.line} currentPoint={props.currentPoint}></Board>
+                    <Board 
+                        wsSend={props.wsSend} 
+                        line={props.line} 
+                        currentPoint={props.currentPoint}
+                        uploader={props.uploader}
+                        progress={props.progress}
+                        progressShow={props.progressShow}
+                        upload={props.upload}
+                        ></Board>
                 </Tab>
                 <Tab id="tab-2" tabActive={current('tab-2')}>
-                    <Doc wsSend={props.wsSend}></Doc>
+                    <Doc 
+                        wsSend={props.wsSend} 
+                        quillDelta={props.quillDelta} 
+                        cursorRange={props.cursorRange}
+                        client={props.client}
+                        typing={props.typing}
+                        name={props.name}
+                        newCursor={props.newCursor}
+                        newComerLength={props.newComerLength}
+                        contentSync={props.contentSync}
+                        newComerReset={props.newComerReset}
+                        />
                 </Tab>
                 <Tab id="tab-3" tabActive={current('tab-3')}>
                     <div id='mixedaudio' style={{ display: 'block' }}></div>

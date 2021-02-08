@@ -68,7 +68,7 @@ export function sessionCreate() {
                                                             media: { video: false,  audio: { echoCancellation: true } },	// This is an audio only room
                                                             success: function (jsep) {
                                                                 Janus.debug("Got SDP!", jsep);
-                                                                var publish = { request: "configure", muted: false };
+                                                                var publish = { request: "configure", muted: true };
                                                                 self.state.mixertest.send({ message: publish, jsep: jsep });
                                                             },
                                                             error: function (error) {
@@ -290,4 +290,9 @@ export function exisitingParticipant(participantId) {
     } else {
         return false
     }
+}
+
+export function toggleMute() {
+    var self = this;
+    this.state.mixertest.send({ message: { request: "configure", muted: self.state.muted }});
 }

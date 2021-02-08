@@ -5,7 +5,13 @@ import {
   App,
   Panel,
   View,
-  Page, Row, Block, Col, Button, Navbar, Link
+  Page, Row, Block,
+  LoginScreen,
+  LoginScreenTitle,
+  List,
+  ListInput,
+  BlockFooter,
+  ListButton,
 } from 'framework7-react';
 import ModelStore from "../stores/ModelStore";
 import * as MyActions from "../actions/MyActions";
@@ -17,9 +23,12 @@ import PanelRightPage from "../containers/layouts/PanelRightPage";
 import RoomShow from "../containers/rooms/show";
 import Right from "./right";
 import routes from '../routes';
+import axios, { put } from 'axios';
+
 import {
-  sessionCreate, addParticipant, exisitingParticipant, registerUsername
+  sessionCreate, addParticipant, exisitingParticipant, registerUsername, toggleMute
 } from "./janus-tools.js"
+import { dict } from '../Dict';
 const client = new W3CWebSocket('ws://127.0.0.1:8080');
 
 export default class extends React.Component {
@@ -37,9 +46,20 @@ export default class extends React.Component {
     this.addParticipant = addParticipant.bind(this);
     //this.removeParticipant = this.removeParticipant.bind(this);
     this.exisitingParticipant = exisitingParticipant.bind(this);
+    this.toggleMute = toggleMute.bind(this);
     this.getJsonFromUrl = this.getJsonFromUrl.bind(this);
     this.wsSend = this.wsSend.bind(this);
 
+    this.handleChangeValue = this.handleChangeValue.bind(this);
+    this.login = this.login.bind(this);
+    this.setInstance = this.setInstance.bind(this);
+    this.newComerReset = this.newComerReset.bind(this);
+    this.toggleMicrophone = this.toggleMicrophone.bind(this);
+
+    this.uploader = this.uploader.bind(this);
+    this.getInstance = this.getInstance.bind(this);
+
+    
     this.state = {
       participants: [],
       token: window.localStorage.getItem("token"),
@@ -56,82 +76,178 @@ export default class extends React.Component {
       userUUID: null,
       line: null,
       currentTab: null,
-      currentPoint: null
+      currentPoint: null,
+      quillDelta: null,
+      cursorRange: null,
+      newCursor: null,
+      client: null,
+      clients: [],
+      typing: null,
+      loginScreenOpened: true,
+      username: '',
+      pass: '',
+      name: null,
+      newComerLength: null,
+      contentSync: null,
+      wsConnected: false,
+      muted: true,
+      progressShow: false,
+      progress: null,
+      upload: null,
     };
   }
   /*
-  async componentDidMount() {
-    const self = this;      
-    const app = self.$f7;
+async componentDidMount() {
+  const self = this;      
+  const app = self.$f7;
 
-    if (messaging) {
-      messaging.requestPermission()
-        .then(async function () {
-          const token = await messaging.getToken();
-          var data = { token: token }
-          if (self.state.token && self.state.token.length > 10) {
-            MyActions.setInstance('devices', data, self.state.token);
-          }
-        })
-        .catch(function (err) {
-          console.log("Unable to get permission to notify.", err);
-        });
-    }
-    navigator.serviceWorker.addEventListener("message", (message) => {
+  if (messaging) {
+    messaging.requestPermission()
+      .then(async function () {
+        const token = await messaging.getToken();
+        var data = { token: token }
+        if (self.state.token && self.state.token.length > 10) {
+          MyActions.setInstance('devices', data, self.state.token);
+        }
+      })
+      .catch(function (err) {
+        console.log("Unable to get permission to notify.", err);
+      });
+  }
+  navigator.serviceWorker.addEventListener("message", (message) => {
 
-      app.notification.create({
-        icon: '',
+    app.notification.create({
+      icon: '',
 
-        title: message.data.firebaseMessaging.payload.notification.title,
-        titleRightText: '',
-        cssClass: 'notification',
-        subtitle: message.data.firebaseMessaging.payload.notification.body,
-        closeTimeout: 5000,
-      }).open();
-    });
+      title: message.data.firebaseMessaging.payload.notification.title,
+      titleRightText: '',
+      cssClass: 'notification',
+      subtitle: message.data.firebaseMessaging.payload.notification.body,
+      closeTimeout: 5000,
+    }).open();
+  });
 
 
-  }*/
+}*/
   // Framework7 parameters here
   setParticipants() {
 
   }
 
+  toggleMicrophone(){
+    this.toggleMute()
+    this.setState({muted: !this.state.muted})
+  }
+
   wsSend(msg) {
-   // console.log(msg)
-    client.send(JSON.stringify(msg))
+    if(this.state.wsConnected){
+      client.send(JSON.stringify(msg))
+    }
   }
 
   componentDidMount() {
     var self = this;
     //self.sessionCreate();
+    MyActions.getInstance('uploads/recent', 1, this.state.token);
     const app = this.$f7;
     console.log('this', this.getJsonFromUrl(this.$f7.view[0].history[0]))
+    if (this.state.token && this.state.token.length > 10) {
+      MyActions.setInstance('users/validate_token', {}, this.state.token);
+      this.setState({ loginScreenOpened: false })
+    } else {
 
+    }
   }
 
+
+  componentWillUnmount() {
+    ModelStore.removeListener("set_instance", this.setInstance);
+    ModelStore.removeListener("got_instance", this.getInstance);
+  }
+
+  newComerReset(){
+    this.setState({ newComerLength: null })
+  }
+
+  uploader(file) {
+    var self = this;
+    console.log(file)
+    self.setState({ progressShow: true }, () => console.log(this.state.progressShow))
+    const config = {
+        onUploadProgress: function (progressEvent) {
+            var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            console.log(percentCompleted)
+            self.setState({ progress: percentCompleted })
+
+        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': "bearer " + self.state.token }
+    }
+
+    let data = new FormData()
+    data.append('upload[attached_document]', file)
+    data.append('upload[room_id]', 1)//self.state.room.id)
+
+    axios.post(conf.server + '/uploads', data, config)
+        .then(res => {
+            self.setState({ progressShow: false });
+            MyActions.getInstance('uploads/recent', 1, this.state.token);
+            self.props.fileUploaded()
+        })
+        .catch(err => self.setState({ progressShow: false }))
+}
+
+
   componentWillMount() {
+    ModelStore.on("set_instance", this.setInstance);
+    ModelStore.on("got_instance", this.getInstance);
     var self = this;
     client.onopen = () => {
-      console.log('$$$$$$$$$$$ -> WebSocket Client Connected');
+      //console.log('$$$$$$$$$$$ -> WebSocket Client Connected');
       client.send(JSON.stringify({ type: 'room', id: this.state.roomId }));
+      self.setState({wsConnected: true})
     };
+    client.onclose = () => {
+      self.setState({wsConnected: false})
+    }
     client.onmessage = (message) => {
-   //  console.log(message);
-     var parsed = {}
-      if(message.data && message.data.length > 0){
+      //  console.log(message);
+      var parsed = {}
+      if (message.data && message.data.length > 0) {
         parsed = JSON.parse(message.data)
       }
 
-      switch(parsed.type) {
+      switch (parsed.type) {
+        case 'room':
+          console.log('client', parsed.c)
+          self.setState({ client: parsed.c })
+          break;
+        case 'contentSync':
+          self.setState({ contentSync: parsed.c })
+          break;
+        case 'newComer':
+          console.log('newComer', parsed.c)
+          self.setState({ newComerLength: parsed.c })
+          break;
+        case 'newCursor':
+          self.setState({ newCursor: parsed.c })
+          break;
+        case 'typing':
+          self.setState({ typing: parsed.c })
+          break;
         case 'point':
           self.setState({ currentPoint: parsed.c })
+          break;
+        case 'quill':
+          self.setState({ quillDelta: parsed.c })
+          break;
+        case 'cursor':
+          self.setState({ cursorRange: parsed.c })
           break;
         case 'line':
           self.setState({ line: parsed.c })
           break;
         case 'tab':
-           self.setState({ currentTab: parsed.current })
+          self.setState({ currentTab: parsed.current })
           break;
       }
 
@@ -149,6 +265,53 @@ export default class extends React.Component {
     });
     return result;
   }
+
+  handleChangeValue(obj) {
+    this.setState(obj);
+  }
+
+  login() {
+    this.$$('.btn').hide();
+    this.$$('.btn-notice').text(dict.submitting);
+    var data = { name: this.state.name, pass: this.state.pass, user: { email: 'test@example.com' } }
+    if (this.state.name && this.state.name.length > 0) {
+      MyActions.setInstance('users/sign_up', data);
+    } else {
+      const self = this;
+      self.$f7.dialog.alert(dict.incomplete_data, dict.alert);
+    }
+  }
+
+  setInstance() {
+    var self = this;
+    var klass = ModelStore.getKlass()
+    var user = ModelStore.getIntance();
+    if (user && klass === 'SignUp') {
+      window.localStorage.setItem('token', user.token);
+      //this.$f7router.navigate('/');
+      window.location.reload()
+    }
+    if (klass === 'Validate') {
+      console.log('registering name ...')
+      this.setState({ name: user.name, fullname: user.name, userUUID: user.uuid  }, () => {
+        self.sessionCreate();
+      })
+    }
+    console.log(user, klass)
+
+  }
+
+  getInstance(){
+    var upload = ModelStore.getIntance()
+    var klass = ModelStore.getKlass()
+    if (upload && klass === 'Upload') {
+      this.setState({
+        upload: upload,
+      });
+    }
+    console.log(upload, klass)
+  }
+
 
 
   render() {
@@ -170,7 +333,21 @@ export default class extends React.Component {
     const {
       line,
       currentTab,
-      currentPoint
+      currentPoint,
+      quillDelta,
+      cursorRange,
+      clients,
+      client,
+      newCursor,
+      typing,
+      name,
+      newComerLength,
+      contentSync, 
+      muted,
+      userUUID,
+      progress,
+      progressShow,
+      upload,
     } = this.state;
 
     return (
@@ -186,6 +363,10 @@ export default class extends React.Component {
           <View>
             <Right
               participants={this.state.participants}
+              handleChangeValue={this.handleChangeValue}
+              muted={muted}
+              userUUID={userUUID}
+              toggleMicrophone={this.toggleMicrophone}
             />
           </View>
         </Panel>
@@ -196,7 +377,61 @@ export default class extends React.Component {
             line={line}
             currentTab={currentTab}
             currentPoint={currentPoint}
+            quillDelta={quillDelta}
+            cursorRange={cursorRange}
+            client={client}
+            typing={typing}
+            newCursor={newCursor}
+            name={name}
+            newComerLength={newComerLength}
+            contentSync={contentSync}
+            newComerReset={this.newComerReset}
+            uploader={this.uploader}
+            progress={progress}
+            progressShow={progressShow}
+            upload={upload}
           />
+          <LoginScreen
+            className="demo-login-screen"
+            opened={this.state.loginScreenOpened}
+            onLoginScreenClosed={() => {
+              this.handleChangeValue({ loginScreenOpened: false });
+            }}
+          >
+            <Page loginScreen>
+              <LoginScreenTitle>{dict.login}</LoginScreenTitle>
+              <List form>
+                <ListInput
+                  label={dict.name}
+                  className='fs-14'
+                  type="text"
+                  placeholder="Your username"
+                  value={this.state.name}
+                  onInput={(e) => {
+                    this.handleChangeValue({ name: e.target.value });
+                  }}
+                />
+                <ListInput
+                  label={dict.pass}
+                  type="text"
+                  className='fs-14'
+                  placeholder="Your Pass"
+                  value={this.state.pass}
+                  onInput={(e) => {
+                    this.handleChangeValue({ pass: e.target.value });
+                  }}
+                />
+              </List>
+              <List>
+                <ListButton onClick={this.login}>Sign In</ListButton>
+                <BlockFooter>
+                  Some text about login information.
+          <br />
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        </BlockFooter>
+              </List>
+            </Page>
+          </LoginScreen>
         </View>
       </App>
     );

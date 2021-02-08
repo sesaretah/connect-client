@@ -22,6 +22,7 @@ import './css/font-awesome.min.css';
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import './css/board.css';
 import './css/style.css';
+import './css/quill.snow.css';
 
 import * as serviceWorker from './serviceWorker';
 
