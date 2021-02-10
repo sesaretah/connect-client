@@ -24,7 +24,7 @@ class Doc extends Component {
             cursorLatency: 1000,
             lastTime: Date.now(),
             curserName: null, //Math.random().toString(36).substring(7),
-            curserColor: randomColor({luminosity: 'dark', alpha: 0.4}),
+            curserColor: this.props.userColor,//randomColor({luminosity: 'dark', alpha: 0.4}),
             cursor: null,
             delta: null,
             quill: null,

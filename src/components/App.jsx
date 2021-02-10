@@ -24,6 +24,7 @@ import RoomShow from "../containers/rooms/show";
 import Right from "./right";
 import routes from '../routes';
 import axios, { put } from 'axios';
+import randomColor from 'randomcolor';
 
 import {
   sessionCreate, addParticipant, exisitingParticipant, registerUsername, toggleMute
@@ -58,8 +59,11 @@ export default class extends React.Component {
 
     this.uploader = this.uploader.bind(this);
     this.getInstance = this.getInstance.bind(this);
-
+    this.recentUpload = this.recentUpload.bind(this);
+    this.revertUndo = this.revertUndo.bind(this);
+    this.revertTrash = this.revertTrash.bind(this);
     
+
     this.state = {
       participants: [],
       token: window.localStorage.getItem("token"),
@@ -94,6 +98,10 @@ export default class extends React.Component {
       progressShow: false,
       progress: null,
       upload: null,
+      page: null,
+      undoVector: null,
+      trash: false,
+      userColor: randomColor({luminosity: 'dark',hue: 'random',alpha: 0.6}),
     };
   }
   /*
@@ -134,13 +142,13 @@ async componentDidMount() {
 
   }
 
-  toggleMicrophone(){
+  toggleMicrophone() {
     this.toggleMute()
-    this.setState({muted: !this.state.muted})
+    this.setState({ muted: !this.state.muted })
   }
 
   wsSend(msg) {
-    if(this.state.wsConnected){
+    if (this.state.wsConnected) {
       client.send(JSON.stringify(msg))
     }
   }
@@ -165,7 +173,7 @@ async componentDidMount() {
     ModelStore.removeListener("got_instance", this.getInstance);
   }
 
-  newComerReset(){
+  newComerReset() {
     this.setState({ newComerLength: null })
   }
 
@@ -174,13 +182,13 @@ async componentDidMount() {
     console.log(file)
     self.setState({ progressShow: true }, () => console.log(this.state.progressShow))
     const config = {
-        onUploadProgress: function (progressEvent) {
-            var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-            console.log(percentCompleted)
-            self.setState({ progress: percentCompleted })
+      onUploadProgress: function (progressEvent) {
+        var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        console.log(percentCompleted)
+        self.setState({ progress: percentCompleted })
 
-        },
-        headers: { 'Content-Type': 'application/json', 'Authorization': "bearer " + self.state.token }
+      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': "bearer " + self.state.token }
     }
 
     let data = new FormData()
@@ -188,13 +196,26 @@ async componentDidMount() {
     data.append('upload[room_id]', 1)//self.state.room.id)
 
     axios.post(conf.server + '/uploads', data, config)
-        .then(res => {
-            self.setState({ progressShow: false });
-            MyActions.getInstance('uploads/recent', 1, this.state.token);
-            self.props.fileUploaded()
-        })
-        .catch(err => self.setState({ progressShow: false }))
-}
+      .then(res => {
+        self.setState({ progressShow: false });
+        MyActions.getInstance('uploads/recent', 1, this.state.token);
+        //self.props.fileUploaded()
+      })
+      .catch(err => self.setState({ progressShow: false }))
+  }
+
+  recentUpload() {
+    this.setState({ progressShow: true });
+    MyActions.getInstance('uploads/recent', 1, this.state.token);
+  }
+
+  revertUndo() {
+    this.setState({ undo: null });
+  }
+
+  revertTrash() {
+    this.setState({ trash: false });
+  }
 
 
   componentWillMount() {
@@ -204,10 +225,10 @@ async componentDidMount() {
     client.onopen = () => {
       //console.log('$$$$$$$$$$$ -> WebSocket Client Connected');
       client.send(JSON.stringify({ type: 'room', id: this.state.roomId }));
-      self.setState({wsConnected: true})
+      self.setState({ wsConnected: true })
     };
     client.onclose = () => {
-      self.setState({wsConnected: false})
+      self.setState({ wsConnected: false })
     }
     client.onmessage = (message) => {
       //  console.log(message);
@@ -220,6 +241,18 @@ async componentDidMount() {
         case 'room':
           console.log('client', parsed.c)
           self.setState({ client: parsed.c })
+          break;
+        case 'page':
+          self.setState({ page: parsed.c })
+          break;
+        case 'undo':
+          self.setState({ undoVector: parsed.c })
+          break;
+        case 'trash':
+          self.setState({ trash: true })
+          break;
+        case 'newUpload':
+          self.recentUpload();
           break;
         case 'contentSync':
           self.setState({ contentSync: parsed.c })
@@ -293,7 +326,7 @@ async componentDidMount() {
     }
     if (klass === 'Validate') {
       console.log('registering name ...')
-      this.setState({ name: user.name, fullname: user.name, userUUID: user.uuid  }, () => {
+      this.setState({ name: user.name, fullname: user.name, userUUID: user.uuid }, () => {
         self.sessionCreate();
       })
     }
@@ -301,13 +334,21 @@ async componentDidMount() {
 
   }
 
-  getInstance(){
+  getInstance() {
     var upload = ModelStore.getIntance()
     var klass = ModelStore.getKlass()
     if (upload && klass === 'Upload') {
       this.setState({
         upload: upload,
+      }, () => {
+        if (!upload.converted) {
+          console.log('Cheking for conversion ...')
+          setTimeout(() => this.recentUpload(), 10000);
+        } else {
+          this.setState({ progressShow: false });
+        }
       });
+
     }
     console.log(upload, klass)
   }
@@ -342,12 +383,17 @@ async componentDidMount() {
       typing,
       name,
       newComerLength,
-      contentSync, 
+      contentSync,
       muted,
       userUUID,
       progress,
       progressShow,
       upload,
+      page,
+      undoVector,
+      trash,
+      userColor,
+      participants,
     } = this.state;
 
     return (
@@ -362,17 +408,18 @@ async componentDidMount() {
         <Panel resizable right themeDark>
           <View>
             <Right
-              participants={this.state.participants}
+              participants={participants}
               handleChangeValue={this.handleChangeValue}
               muted={muted}
               userUUID={userUUID}
               toggleMicrophone={this.toggleMicrophone}
+              userColor={userColor}
             />
           </View>
         </Panel>
         <View id="main-view" url="" pushState={true} main className="safe-areas">
           <RoomShow
-            setParticipants={this.participants}
+            //setParticipants={this.participants}
             wsSend={this.wsSend}
             line={line}
             currentTab={currentTab}
@@ -390,6 +437,15 @@ async componentDidMount() {
             progress={progress}
             progressShow={progressShow}
             upload={upload}
+            recentUpload={this.recentUpload}
+            page={page}
+            undoVector={undoVector}
+            revertUndo={this.revertUndo}
+            trash={trash}
+            revertTrash={this.revertTrash}
+            userColor={userColor}
+            participants={participants}
+            userUUID={userUUID}
           />
           <LoginScreen
             className="demo-login-screen"

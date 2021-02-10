@@ -6,7 +6,7 @@ import { dict } from '../../Dict';
 import Board from "./board";
 import Doc from "./doc.jsx";
 
-
+import Screen from "./screen.jsx";
 
 const RoomShow = (props) => {
     function current(tab) {
@@ -20,6 +20,7 @@ const RoomShow = (props) => {
         return result
     }
     return (
+
         <Page >
             <Navbar title={dict.home} >
                 <Link panelOpen="right">
@@ -51,6 +52,15 @@ const RoomShow = (props) => {
                         progress={props.progress}
                         progressShow={props.progressShow}
                         upload={props.upload}
+                        recentUpload={props.recentUpload}
+                        page={props.page}
+                        undoVector={props.undoVector}
+                        revertUndo={props.revertUndo}
+                        revertTrash={props.revertTrash}
+                        trash={props.trash}
+                        userColor={props.userColor}
+                        participants={props.participants}
+                        userUUID={props.userUUID}
                         ></Board>
                 </Tab>
                 <Tab id="tab-2" tabActive={current('tab-2')}>
@@ -65,10 +75,11 @@ const RoomShow = (props) => {
                         newComerLength={props.newComerLength}
                         contentSync={props.contentSync}
                         newComerReset={props.newComerReset}
+                        userColor={props.userColor}
                         />
                 </Tab>
                 <Tab id="tab-3" tabActive={current('tab-3')}>
-                    <div id='mixedaudio' style={{ display: 'block' }}></div>
+                    <Screen />
                 </Tab>
                 <Tab id="tab-4"  tabActive={current('tab-4')}>
                     4

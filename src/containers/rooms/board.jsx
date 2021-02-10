@@ -19,7 +19,12 @@ class Board extends Component {
         this.handleClick = this.handleClick.bind(this)
         this.handleChange = this.handleChange.bind(this)
         this.handleClose = this.handleClose.bind(this)
+        this.undo = this.undo.bind(this)
+        this.removeLatestLine = this.removeLatestLine.bind(this)
+        this.trash = this.trash.bind(this)
+        this.updateMovement = this.updateMovement.bind(this)
 
+        this.togglePointer = this.togglePointer.bind(this)
 
         this.arrows = this.arrows.bind(this)
         this.state = {
@@ -35,10 +40,13 @@ class Board extends Component {
             scaleY: 1,
             lastTime: Date.now(),
             pointer: { x: 0, y: 0 },
-            currentPage: 1,
+            currentPage: 0,
             color: '#22194D',
             displayColorPicker: false,
-
+            upload: null,
+            vectorId: [],
+            pointers: [],
+            pointerEnabled: true
         }
     }
 
@@ -46,14 +54,73 @@ class Board extends Component {
         if (prevProps.line !== this.props.line) {
             this.setState({ lines: this.state.lines.concat(this.props.line) });
         }
-        if (prevProps.upload !== this.props.upload) {
-            this.setState({ currentPage: 1 });
+        if (prevProps.participants !== this.props.participants) {
+            this.props.participants.map((participant) => {
+                var exisiting = this.state.pointers.filter(
+                    (item) => item.uuid === participant.uuid
+                );
+                if (exisiting.length === 0) {
+                    this.setState({ pointers: this.state.pointers.concat({ uuid: participant.uuid, color: participant.userColor, x: 0, y: 0 }) }, () => {
+                        // console.log('>>>>> Pointers ...', this.state.pointers)
+                    });
+                }
+            })
+
         }
+        if (prevProps.undoVector !== this.props.undoVector) {
+            if (this.props.undoVector) {
+                this.removeLatestLine(this.props.undoVector);
+                this.props.revertUndo();
+            }
+        }
+        if (prevProps.trash !== this.props.trash) {
+            if (this.props.trash) {
+                this.applyTrash();
+                this.props.revertTrash();
+            }
+        }
+        if (prevProps.upload !== this.props.upload) {
+            if (this.props.upload.converted) {
+                this.setState({ currentPage: 0, upload: this.props.upload });
+                this.throttle({ currentPage: this.state.currentPage, uuid: this.props.upload.uuid }, 'newUpload')
+            }
+        }
+        if (prevProps.page !== this.props.page) {
+            if (this.props.page.uuid == this.state.upload.uuid) {
+                this.setState({ currentPage: this.props.page.currentPage });
+            } else {
+                this.props.recentUpload()
+            }
+        }
+
         if (prevProps.currentPoint !== this.props.currentPoint) {
             console.log(this.props.currentPoint)
-            var cord = { x: this.props.currentPoint.x, y: this.props.currentPoint.y }
-            this.setState({ pointer: cord })
+            console.log(this.state.pointers)
+            this.updateMovement(this.props.currentPoint)
+            // var cord = { x: this.props.currentPoint.x, y: this.props.currentPoint.y }
+            // this.setState({ pointer: cord })
+            /*
+                        var pointers = this.state.pointers
+                        for (let i = 0; i < pointers.length; i++) {
+                            if (pointers[i].uuid === this.props.currentPoint.uuid){
+                                let newState = Object.assign({}, this.state);
+                                newState.pointers[i] = { uuid: pointers[i].uuid, color: pointers[i].color, x: this.props.currentPoint.x, y: this.props.currentPoint.y}
+                                this.setState(newState);
+                            }
+                        }
+            */
             //this.setState({ lines: this.state.lines.concat(this.props.line) });
+        }
+    }
+
+    updateMovement(pointer) {
+        var pointers = this.state.pointers
+        for (let i = 0; i < pointers.length; i++) {
+            if (pointers[i].uuid === pointer.uuid) {
+                let newState = Object.assign({}, this.state);
+                newState.pointers[i] = { uuid: pointers[i].uuid, color: pointers[i].color, x: pointer.x, y: pointer.y }
+                this.setState(newState);
+            }
         }
     }
 
@@ -63,34 +130,40 @@ class Board extends Component {
         console.log(e.target.getStage().getPointerPosition())
         const pos = this.getRelativePointerPosition(e.target.getStage());
         var tool = this.state.tool
-        var c = { tool, color: this.state.color, points: [pos.x, pos.y] }
-        this.setState({ lines: this.state.lines.concat(c) }, () => {
+        var vectorId = Math.random().toString(36).substring(7)
+        var c = { tool, color: this.state.color, vectorId: vectorId, points: [pos.x, pos.y] }
+        this.setState({ lines: this.state.lines.concat(c), vectorId: this.state.vectorId.concat(vectorId) }, () => {
             //this.props.wsSend({type: 'line', c: c});
             this.throttle(c, 'line')
+            console.log(c)
         });
 
     };
 
     handleMouseMove = (e) => {
         // no drawing - skipping
-        if (!this.state.isDrawing) {
+        if (this.state.pointerEnabled) {
             const point = this.getRelativePointerPosition(e.target.getStage());
-            this.throttle({ x: point.x, y: point.y }, 'point')
+            var pointer = { uuid: this.props.userUUID, x: point.x, y: point.y }
+            this.updateMovement(pointer)
+            this.throttle(pointer, 'point')
             return;
         }
-        const stage = e.target.getStage();
-        const point = this.getRelativePointerPosition(e.target.getStage());//stage.getPointerPosition();
-        let lastLine = this.state.lines[this.state.lines.length - 1];
-        // add point
-        lastLine.points = lastLine.points.concat([point.x, point.y]);
+        if (this.state.isDrawing) {
+            const stage = e.target.getStage();
+            const point = this.getRelativePointerPosition(e.target.getStage());//stage.getPointerPosition();
+            let lastLine = this.state.lines[this.state.lines.length - 1];
+            // add point
+            lastLine.points = lastLine.points.concat([point.x, point.y]);
 
-        // replace last
-        this.state.lines.splice(this.state.lines.length - 1, 1, lastLine);
-        this.setState({ lines: this.state.lines.concat() }, () => {
-            //console.log(this.state.lines)
-            //this.props.wsSend({type: 'line', c: this.state.lines});
-            this.throttle(this.state.lines, 'line')
-        });
+            // replace last
+            this.state.lines.splice(this.state.lines.length - 1, 1, lastLine);
+            this.setState({ lines: this.state.lines.concat() }, () => {
+                //console.log(this.state.lines)
+                //this.props.wsSend({type: 'line', c: this.state.lines});
+                this.throttle(this.state.lines, 'line')
+            });
+        }
     };
 
     throttle(c, t) {
@@ -171,7 +244,7 @@ class Board extends Component {
 
     progress() {
         //    console.log(this.props.progressShow)
-        if (this.props.progressShow) {
+        if (this.props.progressShow || (this.props.upload && !this.props.upload.converted)) {
             return (
                 <Preloader color="red" />
             )
@@ -184,15 +257,15 @@ class Board extends Component {
                         </div>
                         <div style={{ marginTop: '0px', width: '90px' }}>{dict.new_slide}</div>
                     </label>
-                    <input id="file-input" className="file-input" type="file" name="resume" accept="application/pdf" onInput={(e) => this.props.uploader(e.target.files[0])} />
+                    <input id="file-input" className="file-input" type="file" name="resume" accept="application/pdf" onInput={(e) => { this.props.uploader(e.target.files[0]); this.setState({ upload: null }) }} />
                 </div>
             )
         }
     }
 
     uploaded() {
-        if (this.props.upload) {
-            return (<img src={'http://localhost:3001/' + this.props.upload.uuid + '/x-' + this.enumerator(this.state.currentPage) + '.jpg'} class="b-radius-0 " width={this.state.width + 'px'}></img>)
+        if (this.state.upload) {
+            return (<img src={'http://localhost:3001/' + this.state.upload.uuid + '/x-' + this.enumerator(this.state.currentPage) + '.jpg'} class="b-radius-0 " width={this.state.width + 'px'}></img>)
         }
     }
 
@@ -210,8 +283,9 @@ class Board extends Component {
                         <a onClick={() => this.previousPage()}>
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="20" y1="12" x2="10" y2="12" /><line x1="20" y1="12" x2="16" y2="16" /><line x1="20" y1="12" x2="16" y2="8" /><line x1="4" y1="4" x2="4" y2="20" /></svg>
                         </a>
+
                     </div>
-                    <div style={{ marginTop: '-4px' }}>{this.props.upload.pages}</div>
+                    <div style={{ marginTop: '-4px' }}>{this.state.currentPage + 1}/{this.props.upload.pages}</div>
                     <div>
                         <a onClick={() => this.nextPage()}>
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="12" x2="14" y2="12" /><line x1="4" y1="12" x2="8" y2="16" /><line x1="4" y1="12" x2="8" y2="8" /><line x1="20" y1="4" x2="20" y2="20" /></svg>
@@ -224,13 +298,19 @@ class Board extends Component {
 
     nextPage() {
         if (this.props.upload && this.props.upload.pages && this.props.upload.pages > this.state.currentPage) {
-            this.setState({ currentPage: this.state.currentPage + 1 })
+            this.setState({ currentPage: this.state.currentPage + 1 }, () => {
+                this.throttle({ currentPage: this.state.currentPage, uuid: this.props.upload.uuid }, 'page')
+            })
+
         }
     }
 
     previousPage() {
-        if (this.props.upload && this.props.upload.pages && this.props.upload.pages > this.state.currentPage && this.state.currentPage > 1) {
-            this.setState({ currentPage: this.state.currentPage - 1 })
+        if (this.props.upload && this.props.upload.pages && this.props.upload.pages > this.state.currentPage && this.state.currentPage > 0) {
+            this.setState({ currentPage: this.state.currentPage - 1 }, () => {
+                this.throttle({ currentPage: this.state.currentPage, uuid: this.props.upload.uuid }, 'page')
+            })
+
         }
     }
 
@@ -245,10 +325,42 @@ class Board extends Component {
 
     handleChange(color, event) {
         console.log(color, event)
-        this.setState({ color: color.hex })
+        this.setState({ color: color.hex, pointerEnabled: false })
     }
 
+    undo() {
+        var last = this.state.vectorId[this.state.vectorId.length - 1]
+        this.throttle(last, 'undo')
+        this.removeLatestLine(last)
+        this.setState({ vectorId: this.state.vectorId.filter((v) => v !== last) });
+    }
 
+    removeLatestLine(undoVector) {
+        if (this.state.lines.length > 0) {
+            this.setState({ lines: this.state.lines.filter((line) => line.vectorId !== undoVector) });
+        }
+    }
+
+    trash() {
+        this.throttle(null, 'trash')
+        this.setState({ lines: [] });
+    }
+
+    applyTrash() {
+        this.setState({ lines: [] });
+    }
+
+    pointers() {
+        var result = []
+        this.state.pointers.map((pointer) => {
+            result.push(<Circle x={pointer.x} y={pointer.y} radius={5} fill={pointer.color} />)
+        })
+        return result
+    }
+
+    togglePointer() {
+        this.setState({ pointerEnabled: !this.state.pointerEnabled });
+    }
 
 
     render() {
@@ -268,6 +380,13 @@ class Board extends Component {
             <Card>
                 <CardHeader>
                     <div>
+                        <a onClick={() => this.togglePointer()}>
+                            {!this.state.pointerEnabled ?
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="3" y1="3" x2="21" y2="21" /><path d="M14.828 9.172a4 4 0 0 1 1.172 2.828" /><path d="M17.657 6.343a8 8 0 0 1 1.635 8.952" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
+                                :
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="12" y1="12" x2="12" y2="12.01" /><path d="M14.828 9.172a4 4 0 0 1 0 5.656" /><path d="M17.657 6.343a8 8 0 0 1 0 11.314" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
+                            }
+                        </a>
                         <a onClick={this.handleClick}>
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" /><line x1="13.5" y1="6.5" x2="17.5" y2="10.5" /></svg>
                         </a>
@@ -275,6 +394,12 @@ class Board extends Component {
                             <div style={cover} onClick={this.handleClose} />
                             <CompactPicker onChange={this.handleChange} />
                         </div> : null}
+                        <a onClick={() => this.undo()}>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 13l-4 -4l4 -4m-4 4h11a4 4 0 0 1 0 8h-1" /></svg>
+                        </a>
+                        <a onClick={() => this.trash()}>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                        </a>
                     </div>
 
 
@@ -310,7 +435,7 @@ class Board extends Component {
                             ))}
                         </Layer>
                         <Layer>
-                            <Circle x={this.state.pointer.x} y={this.state.pointer.y} radius={5} fill="green" />
+                            {this.pointers()}
                         </Layer>
 
                     </Stage>

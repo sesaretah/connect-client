@@ -18,6 +18,7 @@
     "framework7": "^4.5.0",
     "framework7-icons": "^2.3.1",
     "framework7-react": "^4.5.0",
+    "ion-sdk-js": "^1.6.0",
     "jalaali-js": "^1.1.0",
     "jalali-date": "^1.1.0",
     "jquery": "^3.5.1",

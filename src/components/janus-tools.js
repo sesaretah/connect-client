@@ -59,7 +59,7 @@ export function sessionCreate() {
                                                     myid: msg["id"],
                                                 });
                                                 Janus.log("Successfully joined room " + msg["room"] + " with ID " + self.state.myid);
-                                                self.addParticipant(msg["id"], self.state.fullname + '§' + self.state.userUUID);
+                                                self.addParticipant(msg["id"], self.state.fullname + '§' + self.state.userUUID + '§' + self.state.userColor);
                                                 if (!self.state.webrtcUp) {
                                                     self.setState({ webrtcUp: true });
                                                     // Publish our stream
@@ -127,7 +127,7 @@ export function sessionCreate() {
                                                     var setup = list[f]["setup"];
                                                     var muted = list[f]["muted"];
 
-                                                    self.addParticipant(msg["id"], self.state.fullname + '§' + self.state.userUUID);
+                                                    self.addParticipant(msg["id"], self.state.fullname + '§' + self.state.userUUID + '§' + self.state.userColor);
 
                                                     Janus.debug("  >> [" + id + "] " + display + " (setup=" + setup + ", muted=" + muted + ")");
                                                     /*
@@ -265,7 +265,7 @@ export function registerUsername() {
     var register = {
         request: "join",
         room: 1234,
-        display: self.state.fullname + " §" + self.state.userUUID,
+        display: self.state.fullname + " §" + self.state.userUUID + '§' + self.state.userColor,
     };
     self.state.mixertest.send({ message: register });
 }
@@ -275,7 +275,7 @@ export function addParticipant(id, p) {
     var self = this;
     var participant = p.split('§')
     if (this.exisitingParticipant(participant[1])) {
-        self.setState({ participants: self.state.participants.concat({ id: id, display: participant[0], uuid: participant[1], role: 'listener' }) });
+        self.setState({ participants: self.state.participants.concat({ id: id, display: participant[0], uuid: participant[1], userColor: participant[2], role: 'listener' }) });
     }
     console.log('participant added:', participant[1])
 }
