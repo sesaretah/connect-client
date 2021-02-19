@@ -1,9 +1,13 @@
 import React, { Component } from 'react';
 import { render } from 'react-dom';
-import { Stage, Layer, Line, Circle } from 'react-konva';
+import { Stage, Layer, Line, Circle, Image } from 'react-konva';
 import { Row, Col, List, BlockTitle, Card, Fab, Icon, Preloader, Progressbar, CardContent, CardHeader, CardFooter } from 'framework7-react';
 import { dict } from '../../Dict';
 import { CompactPicker } from 'react-color';
+import URLImage from './urlimage.jsx';
+import Dexie from 'dexie'
+import MultiStreamsMixer from 'multistreamsmixer';
+
 
 class Board extends Component {
     constructor(props) {
@@ -14,6 +18,10 @@ class Board extends Component {
         this.fitStageIntoParentContainer = this.fitStageIntoParentContainer.bind(this);
         this.getRelativePointerPosition = this.getRelativePointerPosition.bind(this)
         this.stage = React.createRef();
+        this.layer = React.createRef();
+        this.imageLayer = React.createRef();
+
+
         this.throttle = this.throttle.bind(this)
         this.pointer = this.pointer.bind(this)
         this.handleClick = this.handleClick.bind(this)
@@ -25,6 +33,11 @@ class Board extends Component {
         this.updateMovement = this.updateMovement.bind(this)
 
         this.togglePointer = this.togglePointer.bind(this)
+
+        this.loadImage = this.loadImage.bind(this)
+        this.recorder = this.recorder.bind(this)
+        this.stopRecording = this.stopRecording.bind(this)
+        this.recordBtn = this.recordBtn.bind(this)
 
         this.arrows = this.arrows.bind(this)
         this.state = {
@@ -39,14 +52,18 @@ class Board extends Component {
             scaleX: 1,
             scaleY: 1,
             lastTime: Date.now(),
-            pointer: { x: 0, y: 0 },
+            pointer: { x: 100, y: 100 },
             currentPage: 0,
             color: '#22194D',
             displayColorPicker: false,
             upload: null,
             vectorId: [],
             pointers: [],
-            pointerEnabled: true
+            pointerEnabled: true,
+            uploadedHeigth: 1000,
+            ratio: 3 / 4,
+            db: null,
+            recording: false,
         }
     }
 
@@ -81,14 +98,23 @@ class Board extends Component {
         }
         if (prevProps.upload !== this.props.upload) {
             if (this.props.upload.converted) {
-                this.setState({ currentPage: 0, upload: this.props.upload });
-                this.throttle({ currentPage: this.state.currentPage, uuid: this.props.upload.uuid }, 'newUpload')
+                var d = this.props.upload.dimensions[this.state.currentPage]
+                var ratio = d.h / d.w
+                console.log('><><><><', d.h, d.w)
+                this.setState({ currentPage: 0, upload: this.props.upload, ratio: ratio });
+
+
+                if (this.props.uploadedRecently) {
+                    this.throttle({ currentPage: this.state.currentPage, uuid: this.props.upload.uuid }, 'newUpload')
+                    this.props.uploadedRecentlyReset()
+                }
             }
         }
         if (prevProps.page !== this.props.page) {
             if (this.props.page.uuid == this.state.upload.uuid) {
                 this.setState({ currentPage: this.props.page.currentPage });
             } else {
+                console.log('Calling recentUpload ...')
                 this.props.recentUpload()
             }
         }
@@ -183,10 +209,33 @@ class Board extends Component {
     };
 
     componentDidMount() {
+        this.layer.current.getCanvas()._canvas.id = 'main-canvas';
+        /*
+        var canvas = this.layer.current.getCanvas()._canvas
+        //      var canvas2 = this.imageLayer.current.getCanvas()._canvas
+
+        const ctx = canvas.getContext('2d');
+        const stream = canvas.captureStream();
+        // this.$$('vid').src = stream;
+
+        var remoteVideo = document.createElement("video");
+        remoteVideo.srcObject = stream;
+        remoteVideo.autoplay = true;
+        remoteVideo.muted = true;
+        remoteVideo.width = '280';
+        remoteVideo.id = stream.id;
+        this.$$('#vid').append(remoteVideo);*/
+        window.db = {}
+        window.db = new Dexie("VideosDB");
+        window.db.version(2).stores({
+            videos: "++id,session,blob"
+        });
+        //this.setState({db: db})
 
 
-        // this.fitStageIntoParentContainer();
         window.addEventListener('resize', this.fitStageIntoParentContainer);
+        this.$$('#board').css({ height: this.$$('#uploaded').height() })
+        console.log('>>>>>>>>>>>>', this.$$('#uploaded'))
     }
 
     componentWillUnmount() {
@@ -198,8 +247,8 @@ class Board extends Component {
         var cardHeight = this.$$('#board').height()
 
         var scale = Math.min(
-            cardWidth / this.state.baseWidth,
-            cardHeight / this.state.baseHeight
+            cardWidth / this.state.width,
+            cardHeight / this.state.height
         );
 
         //var scaleX = Math.min(cardWidth, this.state.width) / 800;
@@ -208,9 +257,10 @@ class Board extends Component {
         if (window.innerWidth < 1090) {
 
             this.setState({ scale: scale })
-            this.setState({ width: this.$$('#board').width(), height: this.$$('#board').width() * 3 / 4 }, () => {
+            this.setState({ width: this.$$('#board').width(), height: this.$$('#board').width() * this.state.ratio }, () => {
                 this.stage.current.width(this.$$('#board').width());
-                this.stage.current.height(this.$$('#board').width() * 3 / 4);
+                console.log(this.state.width, this.state.height)
+                this.stage.current.height(this.$$('#board').width() * this.state.ratio);
                 this.stage.current.scale({ x: scale, y: scale });
                 this.stage.current.draw()
             });
@@ -218,9 +268,9 @@ class Board extends Component {
 
         if (window.innerWidth > 1090) {
             this.setState({ scale: scale })
-            this.setState({ width: 800, height: 600 }, () => {
+            this.setState({ width: 800, height: 800 * this.state.ratio }, () => {
                 this.stage.current.width(800);
-                this.stage.current.height(600);
+                this.stage.current.height(800 * this.state.ratio);
                 this.stage.current.scale({ x: scale, y: scale });
                 this.stage.current.draw()
             });
@@ -265,7 +315,7 @@ class Board extends Component {
 
     uploaded() {
         if (this.state.upload) {
-            return (<img src={'http://localhost:3001/' + this.state.upload.uuid + '/x-' + this.enumerator(this.state.currentPage) + '.jpg'} class="b-radius-0 " width={this.state.width + 'px'}></img>)
+            return (<img src={'http://localhost:3001/' + this.state.upload.uuid + '/x-' + this.enumerator(this.state.currentPage) + '.jpg'} class="b-radius-0 " id='uploaded' width={this.state.width + 'px'}></img>)
         }
     }
 
@@ -362,6 +412,90 @@ class Board extends Component {
         this.setState({ pointerEnabled: !this.state.pointerEnabled });
     }
 
+    loadImage() {
+        if (this.state.upload) {
+            console.log(this.state.width, this.state.height)
+            return (<URLImage src={'http://localhost:3001/' + this.state.upload.uuid + '/x-' + this.enumerator(this.state.currentPage) + '.jpg'} width={this.state.width} height={this.state.width * this.state.ratio} />)
+        }
+    }
+
+    recorder() {
+        var self = this;
+        console.log('Record started')
+        var canvas = this.layer.current.getCanvas()._canvas;
+        window.recorder = {}
+        const audioMixer = new MultiStreamsMixer([this.props.localStream, this.props.remoteStream]);
+        
+        console.log(audioMixer.getMixedStream())
+        let combined = new MediaStream([...canvas.captureStream(5).getTracks(), ...audioMixer.getMixedStream().getTracks()]);
+        window.recorder = new MediaRecorder(combined) //([this.props.remoteStream , canvas.captureStream()] )
+        var chunks = [];
+        window.recorder.ondataavailable = function (e) {
+            if (e.data.size) {
+                chunks.push(e.data)
+            }
+        };
+        window.recorder.onstop = function () {
+            var blob = new Blob(chunks, { type: 'video/mp4' });
+            var url = URL.createObjectURL(blob);
+            window.db.videos.add({ blob: blob }).then(function () {
+                console.log('Blob Stored ...')
+            }).catch(function (e) {
+                alert("Error: " + (e.stack || e));
+            });
+            //console.log('stoped')
+            //unrelatedDOMStuff(url);
+            // var vid = document.createElement('video');
+            // vid.src = url
+            // vid.controls = true;
+            //self.$$('#board').append(vid);
+            //document.body.appendChild(vid);
+            //stopCanvas();
+        };
+        window.recorder.start();
+        this.setState({ recording: true })
+        // setTimeout(function () { recorder.requestData() }, 3000);
+    }
+
+    stageDrawer() {
+
+    }
+
+    stopRecording() {
+        window.recorder.stop();
+        this.setState({ recording: false })
+    }
+
+    recordBtn() {
+        if (!this.state.recording) {
+            return (
+                <div>
+                    <a onClick={() => this.recorder()}>
+                        <div style={{ float: 'right' }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" /><circle cx="12" cy="14" r="2" /><polyline points="14 4 14 8 8 8 8 4" /></svg>
+                        </div>
+                        <div style={{ marginTop: '0px', width: '90px' }}>{dict.record}</div>
+                    </a>
+                </div>
+            )
+        } else {
+            return (
+                <div>
+                    <a onClick={() => this.stopRecording()}>
+                        <div style={{ float: 'left' }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><rect x="5" y="5" width="14" height="14" rx="2" /></svg>
+                        </div>
+
+                        <div style={{ marginTop: '0px', width: '125px' }}>
+                            <Preloader color="multi" size={15} style={{ marginLeft: '2px' }} />
+                            {dict.recording}...{dict.stop}
+                        </div>
+                    </a>
+                </div>
+            )
+        }
+    }
+
 
     render() {
         const popover = {
@@ -376,76 +510,84 @@ class Board extends Component {
             left: '0px',
         }
 
+
+
         return (
-            <Card>
-                <CardHeader>
-                    <div>
-                        <a onClick={() => this.togglePointer()}>
-                            {!this.state.pointerEnabled ?
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="3" y1="3" x2="21" y2="21" /><path d="M14.828 9.172a4 4 0 0 1 1.172 2.828" /><path d="M17.657 6.343a8 8 0 0 1 1.635 8.952" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
-                                :
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="12" y1="12" x2="12" y2="12.01" /><path d="M14.828 9.172a4 4 0 0 1 0 5.656" /><path d="M17.657 6.343a8 8 0 0 1 0 11.314" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
-                            }
-                        </a>
-                        <a onClick={this.handleClick}>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" /><line x1="13.5" y1="6.5" x2="17.5" y2="10.5" /></svg>
-                        </a>
-                        {this.state.displayColorPicker ? <div style={popover}>
-                            <div style={cover} onClick={this.handleClose} />
-                            <CompactPicker onChange={this.handleChange} />
-                        </div> : null}
-                        <a onClick={() => this.undo()}>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 13l-4 -4l4 -4m-4 4h11a4 4 0 0 1 0 8h-1" /></svg>
-                        </a>
-                        <a onClick={() => this.trash()}>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
-                        </a>
-                    </div>
+            <React.Fragment>
+                <Card>
+                    <CardHeader>
+                        <div>
+                            <a onClick={() => this.togglePointer()}>
+                                {!this.state.pointerEnabled ?
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="3" y1="3" x2="21" y2="21" /><path d="M14.828 9.172a4 4 0 0 1 1.172 2.828" /><path d="M17.657 6.343a8 8 0 0 1 1.635 8.952" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
+                                    :
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="12" y1="12" x2="12" y2="12.01" /><path d="M14.828 9.172a4 4 0 0 1 0 5.656" /><path d="M17.657 6.343a8 8 0 0 1 0 11.314" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
+                                }
+                            </a>
+                            <a onClick={this.handleClick}>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" /><line x1="13.5" y1="6.5" x2="17.5" y2="10.5" /></svg>
+                            </a>
+                            {this.state.displayColorPicker ? <div style={popover}>
+                                <div style={cover} onClick={this.handleClose} />
+                                <CompactPicker onChange={this.handleChange} />
+                            </div> : null}
+                            <a onClick={() => this.undo()}>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 13l-4 -4l4 -4m-4 4h11a4 4 0 0 1 0 8h-1" /></svg>
+                            </a>
+                            <a onClick={() => this.trash()}>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                            </a>
 
+                        </div>
 
-                    {this.progress()}
+                        {this.recordBtn()}
 
-                </CardHeader>
-                <CardContent id='board' className='flex-center'>
-                    <div style={{ position: 'absolute' }}>
-                        {this.uploaded()}
-                    </div>
-                    <Stage
-                        width='800'
-                        height='600'
-                        onMouseDown={this.handleMouseDown}
-                        onMousemove={this.handleMouseMove}
-                        onMouseup={this.handleMouseUp}
-                        ref={this.stage}
-                    >
-                        <Layer
+                        {this.progress()}
+
+                    </CardHeader>
+                    <CardContent id='board' className='flex-center' style={{ alignItems: 'normal', height: this.state.uploadedHeigth }}>
+                        <div style={{ position: 'absolute' }}>
+
+                        </div>
+
+                        <Stage
+                            width={this.state.width + 2}
+                            height={this.state.width * this.state.ratio +2}
+                            onMouseDown={this.handleMouseDown}
+                            onMousemove={this.handleMouseMove}
+                            onMouseup={this.handleMouseUp}
+                            ref={this.stage}
                         >
-                            {this.state.lines.map((line, i) => (
-                                <Line
-                                    key={i}
-                                    points={line.points}
-                                    stroke={line.color}
-                                    strokeWidth={5}
-                                    tension={0.5}
-                                    lineCap="round"
-                                    globalCompositeOperation={
-                                        line.tool === 'eraser' ? 'destination-out' : 'source-over'
-                                    }
-                                />
-                            ))}
-                        </Layer>
-                        <Layer>
-                            {this.pointers()}
-                        </Layer>
 
-                    </Stage>
+                            <Layer ref={this.layer}
+                            >
+                                {this.loadImage()}
+                                {this.pointers()}
+                                {this.state.lines.map((line, i) => (
+                                    <Line
+                                        key={i}
+                                        points={line.points}
+                                        stroke={line.color}
+                                        strokeWidth={5}
+                                        tension={0.5}
+                                        lineCap="round"
+                                        globalCompositeOperation={
+                                            line.tool === 'eraser' ? 'destination-out' : 'source-over'
+                                        }
+                                    />
+                                ))}
 
+                            </Layer>
+                        </Stage>
 
-                </CardContent>
-                <CardFooter className='board-footer'>
-                    {this.arrows()}
-                </CardFooter>
-            </Card>
+                    </CardContent>
+                    <CardFooter className='board-footer'>
+                        {this.arrows()}
+                    </CardFooter>
+
+                </Card>
+                <div id="vid"></div>
+            </React.Fragment>
         );
     }
 }

@@ -207,6 +207,10 @@ export function sessionCreate() {
                                 },
                                 onlocalstream: function (stream) {
                                     Janus.debug(" ::: Got a local stream :::", stream);
+                                    console.log('Local stream ******', stream)
+                                    console.log('Local stream ******', stream.getTracks())
+                                    self.setState({localStream: stream})
+
                                     // We're not going to attach the local audio stream
                                     // $('#audiojoin').hide();
                                     // $('#room').removeClass('hide').show();
@@ -236,6 +240,7 @@ export function sessionCreate() {
                                     if (self.$$('#roomaudio').length === 0) {
                                         self.$$('#mixedaudio').append('<audio class="rounded centered" id="roomaudio" width="100%" height="100%" autoplay/>');
                                         Janus.attachMediaStream(document.getElementById('roomaudio'), stream);
+                                        self.setState({remoteStream: stream})
                                     }
                                 },
                                 oncleanup: function () {

@@ -1,0 +1,192 @@
+<html>
+
+<body>
+<div>
+
+<button id="request">
+Request Camera
+</button>
+<button id="start">
+Start Recording
+</button>
+<button id="stop">
+Stop Recording
+</button>
+<ul id="ul">
+Downloads List:
+</ul>
+
+</div>
+<video id="video" autoplay=""></video>
+</body>
+<script>
+var video, reqBtn, startBtn, stopBtn, ul, stream, recorder;
+video = document.getElementById('video');
+reqBtn = document.getElementById('request');
+startBtn = document.getElementById('start');
+stopBtn = document.getElementById('stop');
+ul = document.getElementById('ul');
+reqBtn.onclick = requestVideo;
+startBtn.onclick = startRecording;
+stopBtn.onclick = stopRecording;
+startBtn.disabled = true;
+ul.style.display = 'none';
+stopBtn.disabled = true;
+
+function requestVideo() {
+navigator.mediaDevices.getUserMedia({
+video: true,
+audio: true
+})
+.then(stm => {
+stream = stm;
+reqBtn.style.display = 'none';
+startBtn.removeAttribute('disabled');
+video.srcObject = stream;
+}).catch(e => console.error(e));
+}
+
+function startRecording() {
+recorder = new MediaRecorder(stream, {
+mimeType: 'video/webm'
+});
+recorder.start();
+console.log('started'+recorder);
+stopBtn.removeAttribute('disabled');
+startBtn.disabled = true;
+}
+
+function stopRecording() {
+console.log('run')
+recorder.ondataavailable = e => {
+var a = document.createElement('a'),
+li = document.createElement('li');
+//a.download = ['video_', (new Date() + '').slice(4, 28), '.webm'].join('');
+//a.href = URL.createObjectURL(e.data);
+//a.textContent = a.download;
+//li.appendChild(a);
+//ul.appendChild(li);
+
+(function () {
+
+window.indexedDB = window.indexedDB || window.webkitIndexedDB ||
+window.mozIndexedDB || window.OIndexedDB ||
+window.msIndexedDB;
+
+var IDBTransaction = window.IDBTransaction ||
+window.webkitIDBTransaction ||
+window.OIDBTransaction ||
+window.msIDBTransaction;
+
+var dbVersion = 1.0;
+var indexedDB = window.indexedDB;
+var dlStatusText = document.getElementById("fetchstatus");
+
+// Create/open database
+var request = indexedDB.open("VideoFiles", dbVersion),
+db,
+createObjectStore = function (dataBase) {
+dataBase.createObjectStore("Videos");
+},
+
+getVideoFile = function () {
+var xhr = new XMLHttpRequest(),
+blob;
+// Get the Video file from the server.
+xhr.open("GET", a, true);
+xhr.responseType = "blob";
+xhr.addEventListener("load", function () {
+if (xhr.status === 200) {
+blob = xhr.response;
+putVideoInDb(blob);
+//dlStatusText.innerHTML = "SUCCESS: Video file downloaded.";
+console.log('success');
+}
+else {
+//dlStatusText.innerHTML = "ERROR: Unable to download video.";
+console.log('fail');
+}
+}, false);
+xhr.send();
+},
+
+putVideoInDb = function (blob) {
+var transaction = db.transaction(["Videos"], "readwrite");
+var put = transaction.objectStore("Videos").put(blob, "savedvideo");
+};
+
+request.onerror = function (event) {
+console.log("Error creating/accessing IndexedDB database");
+};
+
+request.onsuccess = function (event) {
+console.log("Success creating/accessing IndexedDB database");
+db = request.result;
+
+db.onerror = function (event) {
+console.log("Error creating/accessing IndexedDB database");
+};
+
+getVideoFile();
+
+}
+
+// For future use. Currently only in latest Firefox versions
+request.onupgradeneeded = function (event) {
+createObjectStore(event.target.result);
+};
+
+})();
+
+(function () {
+// IndexedDB
+window.indexedDB = window.indexedDB || window.webkitIndexedDB ||
+window.mozIndexedDB || window.OIndexedDB ||
+window.msIndexedDB,
+IDBTransaction = window.IDBTransaction ||
+window.webkitIDBTransaction ||
+window.OIDBTransaction || window.msIDBTransaction,
+dbVersion = 1.0;
+
+var indexedDB = window.indexedDB;
+
+// Create/open database
+var request = indexedDB.open("VideoFiles");
+
+request.onerror = function (event) {
+// Failed to Open the indexedDB database
+};
+
+request.onsuccess = function (event) {
+db = request.result;
+
+// Open a transaction to the database
+var transaction = db.transaction(["Videos"], "readwrite");
+
+// Retrieve the video file
+transaction.objectStore("Videos").get("savedvideo").onsuccess =
+function (event) {
+
+var videoFile = event.target.result;
+console.log(videoFile)
+var URL = window.URL || window.webkitURL;
+var videoURL = videoFile;
+ul.style.display = 'block';
+var a = document.createElement('a'),
+li = document.createElement('li');
+a.download = 'video_1.webm';
+a.href = URL.createObjectURL(e.data);
+a.textContent = a.download;
+li.appendChild(a);
+ul.appendChild(li);
+};
+
+}
+})();
+};
+recorder.stop();
+startBtn.removeAttribute('disabled');
+stopBtn.disabled = true;
+}
+</script>
+</html>

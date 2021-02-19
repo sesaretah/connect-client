@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { w3cwebsocket as W3CWebSocket } from "websocket";
-
+import RecordRTC from 'recordrtc'
 import {
   App,
   Panel,
@@ -22,6 +22,7 @@ import Janus from "../janus.js";
 import PanelRightPage from "../containers/layouts/PanelRightPage";
 import RoomShow from "../containers/rooms/show";
 import Right from "./right";
+import Left from "./left"
 import routes from '../routes';
 import axios, { put } from 'axios';
 import randomColor from 'randomcolor';
@@ -62,7 +63,8 @@ export default class extends React.Component {
     this.recentUpload = this.recentUpload.bind(this);
     this.revertUndo = this.revertUndo.bind(this);
     this.revertTrash = this.revertTrash.bind(this);
-    
+    this.uploadedRecentlyReset = this.uploadedRecentlyReset.bind(this)
+
 
     this.state = {
       participants: [],
@@ -101,7 +103,11 @@ export default class extends React.Component {
       page: null,
       undoVector: null,
       trash: false,
-      userColor: randomColor({luminosity: 'dark',hue: 'random',alpha: 0.6}),
+      userColor: randomColor({ luminosity: 'dark', hue: 'random', alpha: 0.6 }),
+      uploadedRecently: false,
+      remoteStream: null,
+      localStream: null,
+      chats: [],
     };
   }
   /*
@@ -155,7 +161,7 @@ async componentDidMount() {
 
   componentDidMount() {
     var self = this;
-    //self.sessionCreate();
+    self.sessionCreate();
     MyActions.getInstance('uploads/recent', 1, this.state.token);
     const app = this.$f7;
     console.log('this', this.getJsonFromUrl(this.$f7.view[0].history[0]))
@@ -165,6 +171,7 @@ async componentDidMount() {
     } else {
 
     }
+
   }
 
 
@@ -175,6 +182,10 @@ async componentDidMount() {
 
   newComerReset() {
     this.setState({ newComerLength: null })
+  }
+
+  uploadedRecentlyReset() {
+    this.setState({ uploadedRecently: false })
   }
 
   uploader(file) {
@@ -197,7 +208,7 @@ async componentDidMount() {
 
     axios.post(conf.server + '/uploads', data, config)
       .then(res => {
-        self.setState({ progressShow: false });
+        self.setState({ progressShow: false, uploadedRecently: true });
         MyActions.getInstance('uploads/recent', 1, this.state.token);
         //self.props.fileUploaded()
       })
@@ -205,6 +216,7 @@ async componentDidMount() {
   }
 
   recentUpload() {
+    console.log('recentUpload Called ...')
     this.setState({ progressShow: true });
     MyActions.getInstance('uploads/recent', 1, this.state.token);
   }
@@ -241,6 +253,9 @@ async componentDidMount() {
         case 'room':
           console.log('client', parsed.c)
           self.setState({ client: parsed.c })
+          break;
+        case 'chat':
+          self.setState({ chats: this.state.chats.concat(parsed.c) })
           break;
         case 'page':
           self.setState({ page: parsed.c })
@@ -394,15 +409,20 @@ async componentDidMount() {
       trash,
       userColor,
       participants,
+      uploadedRecently,
+      remoteStream,
+      localStream,
+      chats,
     } = this.state;
 
     return (
       <App params={f7params}>
         <Panel resizable left cover>
           <View>
-            <Page>
-              <Block>Left panel content</Block>
-            </Page>
+            <Left
+              wsSend={this.wsSend}
+              chats={chats}
+            />
           </View>
         </Panel>
         <Panel resizable right themeDark>
@@ -446,6 +466,10 @@ async componentDidMount() {
             userColor={userColor}
             participants={participants}
             userUUID={userUUID}
+            uploadedRecently={uploadedRecently}
+            uploadedRecentlyReset={this.uploadedRecentlyReset}
+            remoteStream={remoteStream}
+            localStream={localStream}
           />
           <LoginScreen
             className="demo-login-screen"

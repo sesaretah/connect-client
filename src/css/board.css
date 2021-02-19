@@ -1,6 +1,9 @@
 .konvajs-content {
   border: 1px solid rgb(180, 179, 179);
-  overflow: scroll;
+}
+
+.border-1 {
+  border: 1px solid rgb(180, 179, 179);
 }
 
 .responsive {

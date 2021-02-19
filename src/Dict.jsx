@@ -285,5 +285,14 @@ export const dict = {
   'facultyId': 'شناسه دانشکده ',
   'is_typing': 'درحال نوشتن است',
   'pass': 'رمز',
-  'new_slide':'اسلاید جدید'
+  'new_slide':'اسلاید جدید',
+  'unshare': 'عدم اشتراک',
+  'start_camera': 'دوربین روشن',
+  'end_camera': 'دوربین خاموش',
+  'record': 'ضبط جلسه',
+  'recording': 'در حال ضبط',
+  'stop': 'قطع',
+  'send': 'ارسال',
+  'chat': 'گفتگو',
+  'write_here': 'اینجا بنویسید...',
 }
