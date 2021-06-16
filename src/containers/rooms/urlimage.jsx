@@ -20,7 +20,7 @@ class URLImage extends React.Component {
       if (oldProps.height !== this.props.height) {
         this.loadImage();
       }
-      console.log(this.props)
+      //console.log(this.props)
     }
     componentWillUnmount() {
       this.image.removeEventListener('load', this.handleLoad);

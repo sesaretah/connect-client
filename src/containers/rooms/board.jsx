@@ -72,11 +72,12 @@ class Board extends Component {
             this.setState({ lines: this.state.lines.concat(this.props.line) });
         }
         if (prevProps.participants !== this.props.participants) {
+            console.log('ZZZZZZZZ', this.props.participants)
             this.props.participants.map((participant) => {
                 var exisiting = this.state.pointers.filter(
                     (item) => item.uuid === participant.uuid
                 );
-                if (exisiting.length === 0) {
+                if (exisiting.length === 0 || participant.userColor !== exisiting.userColor) {
                     this.setState({ pointers: this.state.pointers.concat({ uuid: participant.uuid, color: participant.userColor, x: 0, y: 0 }) }, () => {
                         // console.log('>>>>> Pointers ...', this.state.pointers)
                     });
@@ -120,8 +121,7 @@ class Board extends Component {
         }
 
         if (prevProps.currentPoint !== this.props.currentPoint) {
-            console.log(this.props.currentPoint)
-            console.log(this.state.pointers)
+
             this.updateMovement(this.props.currentPoint)
             // var cord = { x: this.props.currentPoint.x, y: this.props.currentPoint.y }
             // this.setState({ pointer: cord })
@@ -232,14 +232,15 @@ class Board extends Component {
         });
         //this.setState({db: db})
 
-
+        window.addEventListener('load', this.fitStageIntoParentContainer);
         window.addEventListener('resize', this.fitStageIntoParentContainer);
         this.$$('#board').css({ height: this.$$('#uploaded').height() })
-        console.log('>>>>>>>>>>>>', this.$$('#uploaded'))
+        //console.log('>>>>>>>>>>>>', this.$$('#uploaded'))
     }
 
     componentWillUnmount() {
         window.removeEventListener("resize", this.fitStageIntoParentContainer);
+        window.removeEventListener("load", this.fitStageIntoParentContainer);
     }
 
     fitStageIntoParentContainer() {
@@ -303,9 +304,9 @@ class Board extends Component {
                 <div class="upload-btn">
                     <label for="file-input">
                         <div style={{ float: 'right' }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><rect x="4" y="4" width="16" height="16" rx="2" /><line x1="9" y1="12" x2="15" y2="12" /><line x1="12" y1="9" x2="12" y2="15" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" /></svg>
                         </div>
-                        <div style={{ marginTop: '0px', width: '90px' }}>{dict.new_slide}</div>
+
                     </label>
                     <input id="file-input" className="file-input" type="file" name="resume" accept="application/pdf" onInput={(e) => { this.props.uploader(e.target.files[0]); this.setState({ upload: null }) }} />
                 </div>
@@ -414,7 +415,7 @@ class Board extends Component {
 
     loadImage() {
         if (this.state.upload) {
-            console.log(this.state.width, this.state.height)
+            //console.log(this.state.width, this.state.height)
             return (<URLImage src={'http://localhost:3001/' + this.state.upload.uuid + '/x-' + this.enumerator(this.state.currentPage) + '.jpg'} width={this.state.width} height={this.state.width * this.state.ratio} />)
         }
     }
@@ -425,7 +426,7 @@ class Board extends Component {
         var canvas = this.layer.current.getCanvas()._canvas;
         window.recorder = {}
         const audioMixer = new MultiStreamsMixer([this.props.localStream, this.props.remoteStream]);
-        
+
         console.log(audioMixer.getMixedStream())
         let combined = new MediaStream([...canvas.captureStream(5).getTracks(), ...audioMixer.getMixedStream().getTracks()]);
         window.recorder = new MediaRecorder(combined) //([this.props.remoteStream , canvas.captureStream()] )
@@ -540,8 +541,6 @@ class Board extends Component {
 
                         </div>
 
-                        {this.recordBtn()}
-
                         {this.progress()}
 
                     </CardHeader>
@@ -552,7 +551,7 @@ class Board extends Component {
 
                         <Stage
                             width={this.state.width + 2}
-                            height={this.state.width * this.state.ratio +2}
+                            height={this.state.width * this.state.ratio + 2}
                             onMouseDown={this.handleMouseDown}
                             onMousemove={this.handleMouseMove}
                             onMouseup={this.handleMouseUp}

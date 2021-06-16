@@ -4,6 +4,7 @@ import { Page, Navbar, List, BlockTitle, Card, Fab, Icon, Preloader, Block, Card
 import { dict } from '../../Dict';
 import { Client, LocalStream, RemoteStream } from 'ion-sdk-js';
 import { IonSFUJSONRPCSignal } from 'ion-sdk-js/lib/signal/json-rpc-impl';
+import { conf } from "../../conf";
 
 class Screen extends Component {
     constructor(props) {
@@ -38,7 +39,7 @@ class Screen extends Component {
         };
 
 
-        var signal = new IonSFUJSONRPCSignal("ws://172.104.246.151:7000/ws");
+        var signal = new IonSFUJSONRPCSignal(conf.ionSignalServer);
 
         this.setState({ config: config, signal: signal }, () => {
             var clientLocal = new Client(this.state.signal, this.state.config)

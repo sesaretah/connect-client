@@ -32,13 +32,13 @@ body {
 /* Custom color theme properties */
 :root {
   --f7-panel-width: 280px;
-  --f7-theme-color: rgb(18, 26, 97);
+  --f7-theme-color: rgb(67, 18, 97);
   --f7-theme-color-rgb: 90, 200, 250;
   --f7-theme-color-shade: #211429;
   --f7-theme-color-tint: #49474b;
   --f7-card-header-font-size: 12px;
 
-  --f7-tabbar-link-active-bg-color: #bdbdbd;
+  --f7-tabbar-link-active-bg-color: #ababab;
   --f7-tabbar-link-inactive-bg-color: #ebebeb;
 
   --f7-navbar-height: 42px;
@@ -107,7 +107,7 @@ body {
 }
 
 .theme-dark {
-  --f7-page-bg-color: #949494;
+  --f7-page-bg-color: #c1bfc2;
   --f7-navbar-bg-color: #a9a9aa;
   --f7-navbar-border-color: #635a64;
   --f7-navbar-text-color: #e9cfec;
@@ -122,13 +122,10 @@ body {
   --f7-color-picker-value-bg-color: rgba(255, 255, 255, 0.1);
   --f7-color-picker-group-bg-color: #000;
   --f7-color-picker-group-value-bg-color: rgba(255, 255, 255, 0.12);
-
-
-
 }
 
 .theme-dark .list ul {
-  --f7-list-bg-color: #6c6c6d;
+  --f7-list-bg-color: #99939c;
   --f7-list-border-color: #5b5a64;
   --f7-list-item-border-color: #5d5a64;
   color: #f1f1f1;
@@ -764,7 +761,9 @@ margin-left: 2px !important;
 
 .icon-bar {
   width: 50px;
-  background-image: linear-gradient(rgb(10, 9, 66), rgb(13, 12, 88), rgb(55, 197, 36));
+  /* background-image: linear-gradient(rgb(10, 9, 66), rgb(13, 12, 88), rgb(55, 197, 36));*/
+  /*background-color: #44475a;*/
+  background-color: #5a2375;
   height: inherit;
   float: right;
   text-align: center;
@@ -778,6 +777,7 @@ margin-left: 2px !important;
   margin: auto;
   border-radius: 50%;
   background-color:rgba(141, 139, 139, 0.5);
+  margin-bottom: 10px;
 }
 
 .z-1 {
@@ -807,6 +807,59 @@ margin-left: 2px !important;
   margin-top: 3px;
 }
 
+.right-icon-1 {
+  position: absolute;
+  left: 18px;
+  margin-left: 10px;
+  margin-top: 3px;
+}
+
+.right-icon-2 {
+  position: absolute;
+  left: 38px;
+  margin-left: 10px;
+  margin-top: 3px;
+}
+
+.right-icon-3 {
+  position: absolute;
+  left:56px;
+  margin-left: 10px;
+  margin-top: 6px;
+}
+
+.right-icon-4 {
+  position: absolute;
+  left: 70px;
+  margin-left: 10px;
+  margin-top: 3px;
+}
+
+.right-icon-5 {
+  position: absolute;
+  left: 85px;
+  margin-left: 10px;
+  margin-top: 3px;
+}
 .upload-btn>input {
   display: none;
+}
+.mb-80 {
+  margin-bottom: 80px;
+}
+
+.fc-white {
+ color: white;
+}
+
+.mr--5 {
+  margin-right: -5px;
+}
+
+.mh-auto {
+  max-height: none !important;
+}
+
+.frame  {
+  margin-bottom: -50px;
 }

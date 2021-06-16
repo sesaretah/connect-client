@@ -5,6 +5,7 @@ import { dict } from '../../Dict';
 import { Client, LocalStream, RemoteStream } from 'ion-sdk-js';
 import { IonSFUJSONRPCSignal } from 'ion-sdk-js/lib/signal/json-rpc-impl';
 import { scaleDiverging, schemeBuPu } from 'd3';
+import { conf } from "../../conf";
 
 class Videos extends Component {
     constructor(props) {
@@ -14,6 +15,7 @@ class Videos extends Component {
         this.videos = this.videos.bind(this)
         this.unPublish = this.unPublish.bind(this)
         this.publishBtn = this.publishBtn.bind(this)
+        this.display = this.display.bind(this)
 
         this.state = {
             signal: null,
@@ -21,6 +23,7 @@ class Videos extends Component {
             clientLocal: null,
             streams: [],
             media: null,
+            display: 1,//Math.floor(Math.random() * 4) + 1,
 
         }
     }
@@ -42,12 +45,12 @@ class Videos extends Component {
         };
 
 
-        var signal = new IonSFUJSONRPCSignal("ws://172.104.246.151:7000/ws");
+        var signal = new IonSFUJSONRPCSignal(conf.ionSignalServer);
 
         this.setState({ config: config, signal: signal }, () => {
             var clientLocal = new Client(this.state.signal, this.state.config)
             this.setState({ clientLocal: clientLocal }, () => {
-                this.state.signal.onopen = () => this.state.clientLocal.join("test videos");
+                this.state.signal.onopen = () => this.state.clientLocal.join("room"+this.state.display);
                 this.state.clientLocal.ontrack = (track, stream) => {
                     console.log("got track", track.id, "for stream", stream.id);
                     if (track.kind === "video") {
@@ -86,8 +89,9 @@ class Videos extends Component {
                 localVideo.srcObject = media;
                 localVideo.autoplay = true;
                 localVideo.muted = true;
-                localVideo.width = '280';
+                localVideo.width = '320';
                 this.state.clientLocal.publish(media);
+                console.log(media)
                 this.$$('#remoteVideos').append(localVideo);
                 media.getVideoTracks()[0].onended = function () {
                     self.unPublish()
@@ -107,7 +111,7 @@ class Videos extends Component {
                     remoteVideo.srcObject = stream;
                     remoteVideo.autoplay = true;
                     remoteVideo.muted = true;
-                    remoteVideo.width = '280';
+                    remoteVideo.width = '320';
                     remoteVideo.id = stream.id;
                     this.$$('#remoteVideos').append(remoteVideo);
                 }
@@ -131,7 +135,7 @@ class Videos extends Component {
             return (
                 <Button fill onClick={() => this.start()}>
                     <div style={{ float: 'right', paddingTop: '5px' }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 10l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -1.447 .894l-4.553 -2.276v-4z" /><rect x="3" y="6" width="12" height="12" rx="2" /><line x1="7" y1="12" x2="11" y2="12" /><line x1="9" y1="10" x2="9" y2="14" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 10l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -1.447 .894l-4.553 -2.276v-4z" /><rect x="3" y="6" width="12" height="12" rx="2" /><line x1="7" y1="12" x2="11" y2="12" /><line x1="9" y1="10" x2="9" y2="14" /></svg>
                     </div>
                     <div style={{ marginTop: '0px', width: '90px' }}>{dict.start_camera}</div>
                 </Button>
@@ -140,7 +144,7 @@ class Videos extends Component {
             return (
                 <Button onClick={() => this.unPublish()}>
                     <div style={{ float: 'right', paddingTop: '5px' }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><line x1="3" y1="3" x2="21" y2="21" /><path d="M15 11v-1l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -.675 .946" /><path d="M10 6h3a2 2 0 0 1 2 2v3m0 4v1a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-8a2 2 0 0 1 2 -2h1" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="3" y1="3" x2="21" y2="21" /><path d="M15 11v-1l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -.675 .946" /><path d="M10 6h3a2 2 0 0 1 2 2v3m0 4v1a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-8a2 2 0 0 1 2 -2h1" /></svg>
                     </div>
                     <div style={{ marginTop: '0px', width: '93px' }}>{dict.end_camera}</div>
                 </Button>
@@ -148,11 +152,19 @@ class Videos extends Component {
         }
     }
 
+    display(event){
+        console.log(event.target.value)
+        this.setState({display: event.target.value}, () => {
+            console.log('Display:' + this.state.display)
+        });
+    }
+
     render() {
         return (
             <Card>
                 <CardHeader>
                     {this.publishBtn()}
+                    {this.state.display}
                 </CardHeader>
                 <CardContent id='videos'>
                     {this.videos()}

@@ -110,9 +110,9 @@ export const dict = {
   'profiles': 'افراد ',
   'firstname': 'نام',
   'if_registered': 'اگر قبلا ثبت نام کرده اید',
-  'you_can_login':'وارد شوید ',
+  'you_can_login':'اگر قبلا ثبت نام کرده اید، وارد شوید',
   'if_not_registered': 'اگر ثبت نام نکرده اید',
-  'you_can_sign_up':'ثبت نام کنید',
+  'you_can_sign_up': 'چنانچه ثبت نام نکرده اید، اینجا کلیک کنید.',
   'new_assignment': 'اعطای نقش جدید',
   'posts': 'پست ها',
   'bookmark': 'نشان',
@@ -295,4 +295,5 @@ export const dict = {
   'send': 'ارسال',
   'chat': 'گفتگو',
   'write_here': 'اینجا بنویسید...',
+  'frame_link': 'آدرس',
 }

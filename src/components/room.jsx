@@ -3,7 +3,6 @@ import ModelStore from "../stores/ModelStore";
 import * as MyActions from "../actions/MyActions";
 import {  Panel, View} from 'framework7-react';
 
-
 import $ from 'jquery';
 import { dict } from "../Dict";
 import { conf } from "../conf";
@@ -151,7 +150,7 @@ export default class Layout extends React.Component {
         } = this.state;
         return (
             <React.Fragment>
-
+                
             <RoomShow participants={participants} panelOpen={panelOpen}
             />
             </React.Fragment>
