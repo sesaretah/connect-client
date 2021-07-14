@@ -12,8 +12,12 @@ var _conf = require("../conf");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 //const socket = io.connect(conf.socketIOServer)
+//const socket = io.connect(conf.socketIOServer, { transports: ['websocket'] })
 var socket = _socket["default"].connect(_conf.conf.socketIOServer, {
-  transports: ['websocket']
+  transports: ['websocket'],
+  secure: true,
+  reconnect: true,
+  rejectUnauthorized: false
 });
 
 exports.socket = socket;

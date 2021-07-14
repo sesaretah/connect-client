@@ -30,16 +30,24 @@ import Login from "./login"
 import routes from '../routes';
 import axios, { put } from 'axios';
 import randomColor from 'randomcolor';
+import Framework7 from 'framework7/framework7.esm.bundle';
 
 import {
   sessionCreate, addParticipant, exisitingParticipant, registerUsername,
   toggleMute, exitAudioRoom, removeParticipant, participantChangeStatus,
-  participantDisplay
+  participantDisplay, forceMute, participantChangeRoom
 } from "./janus-tools.js";
+
+import {
+  vsessionCreate, vregisterUsername, vNewRemoteFeed, publishCamera,
+  vPublishBtn, vStreamAttacher, vStreamDettacher, unPublishCamera,
+  vChangeUsername
+} from "./janus-videoroom.js";
 
 import {
   ionSessionCreate, ionStart, ionVideos, ionUnPublish, ionPublishBtn, ionDisplay,
   screenSessionCreate, screenStart, screenVideos, screenUnPublish, screenPublishBtn,
+  leaveRoom
 } from "./ion-tools.js";
 
 import { socket } from './socket.js'
@@ -60,7 +68,20 @@ export default class extends React.Component {
     this.registerUsername = registerUsername.bind(this);
     this.participantChangeStatus = participantChangeStatus.bind(this);
     this.participantDisplay = participantDisplay.bind(this);
+    this.forceMute = forceMute.bind(this);
+    this.participantChangeRoom = participantChangeRoom.bind(this);
+    this.leaveRoom = leaveRoom.bind(this);
 
+    this.vsessionCreate = vsessionCreate.bind(this)
+    this.vregisterUsername = vregisterUsername.bind(this)
+    this.vNewRemoteFeed = vNewRemoteFeed.bind(this)
+    this.publishCamera = publishCamera.bind(this)
+    this.vPublishBtn = vPublishBtn.bind(this)
+    this.vStreamAttacher = vStreamAttacher.bind(this)
+    this.vStreamDettacher = vStreamDettacher.bind(this)
+    this.unPublishCamera = unPublishCamera.bind(this)
+    this.vChangeUsername = vChangeUsername.bind(this)
+    
     //this.pageAfterIn = this.pageAfterIn.bind(this);
     //this.streamAttacher = this.streamAttacher.bind(this);
     //this.streamDettacher = this.streamDettacher.bind(this);
@@ -117,19 +138,30 @@ export default class extends React.Component {
     this.togglePresenter = this.togglePresenter.bind(this)
 
     this.ionRequestRoom = this.ionRequestRoom.bind(this)
+    this.toggleRole = this.toggleRole.bind(this)
+
+    this.connectSocketRoom = this.connectSocketRoom.bind(this)
+    this.participantRole = this.participantRole.bind(this)
+
+    this.handRaise = this.handRaise.bind(this)
+    this.handRaised = this.handRaised.bind(this)
+    this.pageAfterIn = this.pageAfterIn.bind(this)
 
 
     this.state = {
       participants: [],
+      vparticipants: [],
+      feeds: [],
       token: window.localStorage.getItem("token"),
       shortners: null,
       server: conf.janusServer,
       janus: null,
       sfutest: null,
       opaqueId: "videoroomtest-" + Janus.randomString(12),
-      roomId: 1187894,
+      roomId: null,
       pin: 'c13eab83262202c2840a',
       myId: null,
+      myVroomId: null,
       isAdmin: false,
       webrtcUp: null,
       myusername: null,
@@ -172,12 +204,16 @@ export default class extends React.Component {
       // ion states
       signal: null,
       config: null,
-      clientLocal: null,
+      clientLocal: [],
       streams: [],
       media: null,
       display: 1,
       ionActive: false,
       //
+
+      vActive: false,
+      publishedCamera: false,
+      vJoined: false,
 
       screenSignal: null,
       screenConfig: null,
@@ -192,7 +228,20 @@ export default class extends React.Component {
       converterCounter: 0,
 
       presenters: [],
+      roles: [],
       isPresenter: false,
+      isSpeaker: false,
+      isWriter: false,
+
+      handRaisings: [],
+
+      slot: null,
+      videoState: 'initial',
+
+      validationState: null,
+      talking: {},
+      participantRoom: {},
+
     };
   }
   /*
@@ -240,55 +289,169 @@ async componentDidMount() {
 
   togglePresenter(uuid) {
     var self = this;
-    console.log('presenter', uuid)
-    socket.emit('presenter', { uuid: uuid });
-    this.setState({ presenters: self.state.presenters.concat(uuid) })
+    //console.log('presenter', uuid)
+    //socket.emit('presenter', { uuid: uuid });
+    //this.setState({ presenters: self.state.presenters.concat(uuid) })
   }
 
-  wsSend(msg) {
+  toggleRole(uuid, role, domain = 'single') {
+    var self = this;
+    //console.log(uuid, role, this.participantRole(uuid))
+    if (this.participantRole(uuid) === role) {
+      role = 'not' + role
+    }
+    var roleBlock = { uuid: uuid, role: role, domain: domain }
+    socket.emit('changeRole', roleBlock);
+    var roles = this.state.roles
+    if (roles.length > 0) {
+      for (let i = 0; i < roles.length; i++) {
+        if (roles[i].uuid && roles[i].uuid === uuid) {
+          let newState = Object.assign({}, this.state);
+          newState.roles[i] = roleBlock
+          this.setState(newState);
+        } else {
+          this.setState({ roles: this.state.roles.concat(roleBlock) });
+        }
+      }
+    } else {
+      this.setState({ roles: this.state.roles.concat(roleBlock) });
+    }
+  }
+
+  participantRole(uuid) {
+    var roles = this.state.roles.filter(
+      (item) => item.uuid === uuid
+    );
+    if (roles && roles[0] && roles[0].role) {
+      return (roles[0].role)
+    } else {
+      return ('')
+    }
+  }
+
+  handRaise(msg) {
+    var self = this;
+    var raiseBlock = { uuid: msg['raiserUUID'], status: msg['status'] }
+    var handRaisings = this.state.handRaisings
+    if (handRaisings.length > 0) {
+      for (let i = 0; i < handRaisings.length; i++) {
+        if (handRaisings[i].uuid && handRaisings[i].uuid === msg['raiserUUID']) {
+          let newState = Object.assign({}, this.state);
+          newState.handRaisings[i] = raiseBlock
+          this.setState(newState);
+        } else {
+          this.setState({ handRaisings: this.state.handRaisings.concat(raiseBlock) });
+        }
+      }
+    } else {
+      this.setState({ handRaisings: this.state.handRaisings.concat(raiseBlock) });
+    }
+  }
+
+  handRaised(uuid) {
+    // console.log(this.state.handRaisings)
+    var flag = false
+    var handRaisings = this.state.handRaisings
+    for (let i = 0; i < handRaisings.length; i++) {
+      if (handRaisings[i].uuid && handRaisings[i].uuid === uuid && handRaisings[i].status === 'raised') {
+        flag = true
+      }
+      if (i === handRaisings.length - 1) {
+        return flag
+      }
+
+    }
+
+  }
+
+
+
+  wsSend(msg, sender = this.state.userUUID) {
     msg['room'] = this.state.roomId
-    msg['sender'] = this.state.userUUID
+    msg['sender'] = sender
     socket.emit('message', msg);
   }
 
   componentDidMount() {
     var self = this;
-    //self.sessionCreate();
     MyActions.getInstance('uploads/recent', 1, this.state.token);
     const app = this.$f7;
-    console.log('this $$$$$$$', this.getJsonFromUrl(this.$f7.view[0].history[0]))
-    this.extractAction();
+    //console.log('this $$$$$$$', this.getJsonFromUrl(this.$f7.view[0].history[0]))
+    //this.extractAction();
     MyActions.getInstance('rooms/last', 1, this.state.token);
 
 
     if (this.state.token && this.state.token.length > 10) {
       MyActions.setInstance('users/validate_token', {}, this.state.token);
-      this.setState({ loginScreenOpened: false })
+      this.setState({ loginScreenOpened: false, validationState: 'confirm' })
     } else {
-
+      var params = this.getJsonFromUrl(this.$f7.view[0].history[0])
+      if(params && params['token']){
+        MyActions.setInstance('users/validate_token', {}, params['token']);
+        this.setState({ validationState: 'start' })
+        window.localStorage.setItem('token', params['token']);
+      }
+      
     }
 
-    //self.ionSessionCreate();
     self.screenSessionCreate();
+    
 
     socket.on('connect', function () {
-      // socket.emit('room', room);
+      if (self.state.roomId) {
+        socket.emit('room', { room: self.state.roomId.toString(), uuid: self.state.userUUID });
+      }
     });
 
     socket.on('message', function (data) {
-      self.socketHandle(data)
-      console.log(data)
+      if (data['sender'] !== self.state.userUUID) {
+        self.socketHandle(data)
+      }
     });
+
+
     socket.on('ionSlot', function (data) {
-      self.ionSessionCreate(data['slot'][0]);
-      //console.log('>>>>>', data['slot'][0])
+      console.log(data['slot']);
+      self.setState({ slot: data['slot'] }, ()=>{
+        if(!self.state.vJoined){
+          self.vsessionCreate(1234)
+        } else {
+          self.vChangeUsername(1234)
+        }
+      })
+      self.wsSend({ type: 'joinedRoom', c: data['slot'] })
+      setTimeout(
+        () => self.publishCamera(),
+        7000
+      );
+      //console.log('>>>>>!!!', data['slot'])
     })
+
+    window.onunload = window.onbeforeunload = function() { 
+      self.unPublishCamera()
+    }
+
+    //window.onunload = function(){self.ionUnPublish();}
+   // self.$$('.popover-menu').toggleClass("popover-open")
+   
+    
+    //.on('popover:open', function (e) {
+    //  console.log('About popover open');
+    //});
   }
 
-  ionRequestRoom(){
-    
-    socket.emit('ionReqSlot', {uuid: this.state.userUUID});
-    console.log('ionReqSlot')
+  ionRequestRoom() {
+    var self = this;
+    self.$$('#videoLoaderIcon').show();
+    self.$$('#enableVideo').hide();
+
+    if (self.state.videoState == 'initial') {
+      self.setState({ videoState: 'requested' },
+        () => {
+          socket.emit('ionReqSlot', { uuid: this.state.userUUID })
+          //console.log('ionReqSlot')
+        })
+    }
 
   }
 
@@ -328,12 +491,12 @@ async componentDidMount() {
 
   uploader(file) {
     var self = this;
-    console.log(file)
+    //console.log(file)
     self.setState({ progressShow: true }, () => console.log(this.state.progressShow))
     const config = {
       onUploadProgress: function (progressEvent) {
         var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-        console.log(percentCompleted)
+        //console.log(percentCompleted)
         self.setState({ progress: percentCompleted })
 
       },
@@ -354,7 +517,7 @@ async componentDidMount() {
   }
 
   recentUpload() {
-    console.log('recentUpload Called ...')
+    //console.log('recentUpload Called ...')
     this.setState({ progressShow: true });
     MyActions.getInstance('uploads/recent', 1, this.state.token);
   }
@@ -369,16 +532,14 @@ async componentDidMount() {
 
   scrollTo(el) {
     const pos = this.$$(el).offset()
-    //console.log(this.$$('#screen').offset())
-    //console.log(this.$$('#main-page').offset())
     this.$$('.page-content').scrollTop(pos.top, 350)
-    console.log('>>>>>>>', pos)
   }
 
   appendChat(c) {
-    console.log(c)
+    //console.log(c)
     var exist = this.state.chats.filter((item) => item.uuid === c.uuid)
-    if(!exist){
+    //console.log(exist)
+    if (exist && exist.length === 0) {
       if (this.state.chats && this.state.chats.length > 50) {
         this.setState({ chats: this.state.chats.slice(1).concat(c) })
       } else {
@@ -387,7 +548,7 @@ async componentDidMount() {
       if (!this.state.chatActive) {
         this.setState({ chatActive: true })
       }
-    }   
+    }
 
   }
 
@@ -410,20 +571,62 @@ async componentDidMount() {
   socketHandle(msg) {
 
     var self = this;
-    if (msg['sender'] === self.state.userUUID) {
-      return
-    }
+    //console.log(msg)
     var parsed = msg
     switch (parsed.type) {
       case 'room':
-        console.log('client', parsed.c)
+        //console.log('client', parsed.c)
         self.setState({ client: parsed.c })
         break;
       case 'presenter':
-        console.log()
+        //console.log()
         if (parsed.c['presenterUUID'] == self.state.userUUID) {
           self.setState({ isPresenter: true })
         }
+        break;
+      case 'joinedRoom':
+        //console.log(parsed)
+        self.participantChangeRoom(parsed.sender, parsed.c)
+        break;
+      case 'joinRoom':
+        if (this.state.slot !== parsed.c) {
+          //console.log(parsed.c)
+          self.ionSessionCreate(parsed.c);
+        }
+        break;
+      case 'leaveRoom':
+        if (this.state.slot !== parsed.c) {
+          //console.log(parsed.c)
+          self.leaveRoom(parsed.c);
+        }
+        break;
+      case 'changeRole':
+        //console.log()
+        if (parsed.c['domain'] == 'all' || parsed.c['roleUUID'] == self.state.userUUID) {
+          if (parsed.c['role'] == 'presenter') {
+            self.setState({ isPresenter: true, isSpeaker: false, isWriter: false })
+          }
+          if (parsed.c['role'] == 'speaker') {
+            self.setState({ isSpeaker: true, isPresenter: false })
+          }
+          if (parsed.c['role'] == 'writer') {
+            self.setState({ isWriter: true, isPresenter: false })
+          }
+          if (parsed.c['role'] == 'notpresenter') {
+            self.setState({ isPresenter: false })
+          }
+          if (parsed.c['role'] == 'notwriter') {
+            self.setState({ isWriter: false })
+          }
+          if (parsed.c['role'] == 'notspeaker') {
+            self.forceMute();
+            self.setState({ isSpeaker: false })
+          }
+        }
+        break;
+
+      case 'handRaise':
+        self.handRaise(parsed.c)
         break;
       case 'srcLink':
         self.appendLink(parsed.c)
@@ -447,7 +650,7 @@ async componentDidMount() {
         self.setState({ contentSync: parsed.c })
         break;
       case 'newComer':
-        console.log('newComer', parsed.c)
+        //console.log('newComer', parsed.c)
         self.setState({ newComerLength: parsed.c })
         break;
       case 'newCursor':
@@ -494,7 +697,7 @@ async componentDidMount() {
 
       switch (parsed.type) {
         case 'room':
-          console.log('client', parsed.c)
+          //console.log('client', parsed.c)
           self.setState({ client: parsed.c })
           break;
 
@@ -520,7 +723,7 @@ async componentDidMount() {
           self.setState({ contentSync: parsed.c })
           break;
         case 'newComer':
-          console.log('newComer', parsed.c)
+          //console.log('newComer', parsed.c)
           self.setState({ newComerLength: parsed.c })
           break;
         case 'newCursor':
@@ -594,12 +797,18 @@ async componentDidMount() {
       window.location.reload()
     }
     if (klass === 'Validate') {
-      console.log('registering name ...')
-      this.setState({ name: user.name, fullname: user.name, userUUID: user.uuid }, () => {
-        //self.sessionCreate();
-      })
+      if(this.state.validationState === 'confirm'){
+        //console.log('registering name ...')
+        this.setState({ name: user.name, fullname: user.name, userUUID: user.uuid }, () => {
+          self.connectSocketRoom();
+        })
+      } else {
+        window.location.reload()
+      }
+
+      //this.setState({ loginScreenOpened: false })
     }
-    console.log(user, klass)
+    //console.log(user, klass)
 
   }
 
@@ -612,7 +821,7 @@ async componentDidMount() {
         model: model,
       }, () => {
         if (!model.converted && self.state.converterCounter < 10) {
-          console.log('Cheking for conversion ...')
+          //console.log('Cheking for conversion ...')
           setTimeout(() => this.recentUpload(), 10000);
           this.setState({ converterCounter: self.state.converterCounter + 1 })
         } else {
@@ -627,19 +836,30 @@ async componentDidMount() {
         isAdmin: model.is_admin,
         isPresenter: model.is_admin,
       }, () => {
-        self.sessionCreate();
-        socket.on('connect', function () {
-          socket.emit('room', { room: model.room_id.toString(), uuid: self.state.userUUID });
-        });
-
-        //self.maintainWS()
+        self.sessionCreate(self.state.roomId);
+        //self.sessionCreate(1234);
+        self.connectSocketRoom();
       })
     }
-    console.log(model, klass)
+    //console.log(model, klass)
+  }
+
+  connectSocketRoom() {
+    if (this.state.userUUID && this.state.roomId) {
+      socket.emit('room', { room: this.state.roomId, uuid: this.state.userUUID });
+      //console.log('*******', this.state.roomId, this.state.userUUID)
+    }
   }
 
   currentPage() {
 
+  }
+
+  pageAfterIn() {
+   // setTimeout(
+   //   () => this.$f7.popover.open('.popover-menu', '#xxx'),
+   //   7000
+   // );
   }
 
 
@@ -696,7 +916,15 @@ async componentDidMount() {
       srcLink,
       isAdmin,
       chatActive,
-      isPresenter
+      isPresenter,
+      isSpeaker,
+      isWriter,
+      roles,
+      handRaisings,
+      slot,
+      talking,
+      participantRoom,
+      vActive
     } = this.state;
 
     return (
@@ -736,6 +964,20 @@ async componentDidMount() {
               chatDeactive={this.chatDeactive}
               togglePresenter={this.togglePresenter}
               isPresenter={isPresenter}
+              toggleRole={this.toggleRole}
+              isSpeaker={isSpeaker}
+              isWriter={isWriter}
+              roles={roles}
+              participantRole={this.participantRole}
+              wsSend={this.wsSend}
+              handRaisings={handRaisings}
+              handRaised={this.handRaised}
+              handRaise={this.handRaise}
+              currentSlot={slot}
+              talking={talking}
+              participantRoom={participantRoom}
+              pageAfterIn={this.pageAfterIn}
+              vPublishBtn={this.vPublishBtn}
             />
           </View>
         </Panel>
@@ -779,6 +1021,9 @@ async componentDidMount() {
             appendLink={this.appendLink}
             srcLink={srcLink}
             isAdmin={isAdmin}
+            isPresenter={isPresenter}
+            isWriter={isWriter}
+            vActive={vActive}
           />
           <LoginScreen
             className="demo-login-screen"

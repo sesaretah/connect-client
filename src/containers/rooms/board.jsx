@@ -39,6 +39,10 @@ class Board extends Component {
         this.stopRecording = this.stopRecording.bind(this)
         this.recordBtn = this.recordBtn.bind(this)
 
+        this.boardControl = this.boardControl.bind(this)
+
+
+
         this.arrows = this.arrows.bind(this)
         this.state = {
             tool: 'pen',
@@ -72,7 +76,7 @@ class Board extends Component {
             this.setState({ lines: this.state.lines.concat(this.props.line) });
         }
         if (prevProps.participants !== this.props.participants) {
-            console.log('ZZZZZZZZ', this.props.participants)
+            //console.log('ZZZZZZZZ', this.props.participants)
             this.props.participants.map((participant) => {
                 var exisiting = this.state.pointers.filter(
                     (item) => item.uuid === participant.uuid
@@ -101,7 +105,7 @@ class Board extends Component {
             if (this.props.upload.converted) {
                 var d = this.props.upload.dimensions[this.state.currentPage]
                 var ratio = d.h / d.w
-                console.log('><><><><', d.h, d.w)
+                //console.log('><><><><', d.h, d.w)
                 this.setState({ currentPage: 0, upload: this.props.upload, ratio: ratio });
 
 
@@ -115,7 +119,7 @@ class Board extends Component {
             if (this.props.page.uuid == this.state.upload.uuid) {
                 this.setState({ currentPage: this.props.page.currentPage });
             } else {
-                console.log('Calling recentUpload ...')
+                //console.log('Calling recentUpload ...')
                 this.props.recentUpload()
             }
         }
@@ -146,14 +150,15 @@ class Board extends Component {
                 let newState = Object.assign({}, this.state);
                 newState.pointers[i] = { uuid: pointers[i].uuid, color: pointers[i].color, x: pointer.x, y: pointer.y }
                 this.setState(newState);
+                break;
             }
         }
     }
 
     handleMouseDown = (e) => {
         this.setState({ isDrawing: true });
-        console.log(this.getRelativePointerPosition(e.target.getStage()))
-        console.log(e.target.getStage().getPointerPosition())
+        //console.log(this.getRelativePointerPosition(e.target.getStage()))
+        //console.log(e.target.getStage().getPointerPosition())
         const pos = this.getRelativePointerPosition(e.target.getStage());
         var tool = this.state.tool
         var vectorId = Math.random().toString(36).substring(7)
@@ -161,21 +166,21 @@ class Board extends Component {
         this.setState({ lines: this.state.lines.concat(c), vectorId: this.state.vectorId.concat(vectorId) }, () => {
             //this.props.wsSend({type: 'line', c: c});
             this.throttle(c, 'line')
-            console.log(c)
+            //console.log(c)
         });
 
     };
 
     handleMouseMove = (e) => {
         // no drawing - skipping
-        if (this.state.pointerEnabled) {
+        if (this.state.pointerEnabled && (this.props.isAdmin || this.props.isPresenter || this.props.isWriter) ) {
             const point = this.getRelativePointerPosition(e.target.getStage());
             var pointer = { uuid: this.props.userUUID, x: point.x, y: point.y }
             this.updateMovement(pointer)
             this.throttle(pointer, 'point')
             return;
         }
-        if (this.state.isDrawing) {
+        if (this.state.isDrawing && (this.props.isAdmin || this.props.isPresenter || this.props.isWriter)) {
             const stage = e.target.getStage();
             const point = this.getRelativePointerPosition(e.target.getStage());//stage.getPointerPosition();
             let lastLine = this.state.lines[this.state.lines.length - 1];
@@ -193,7 +198,7 @@ class Board extends Component {
     };
 
     throttle(c, t) {
-        if (Date.now() - this.state.lastTime > 100) {
+        if (Date.now() - this.state.lastTime > 300) {
             this.setState({ lastTime: Date.now() }, () => {
                 this.props.wsSend({ type: t, c: c })
             })
@@ -210,21 +215,7 @@ class Board extends Component {
 
     componentDidMount() {
         this.layer.current.getCanvas()._canvas.id = 'main-canvas';
-        /*
-        var canvas = this.layer.current.getCanvas()._canvas
-        //      var canvas2 = this.imageLayer.current.getCanvas()._canvas
 
-        const ctx = canvas.getContext('2d');
-        const stream = canvas.captureStream();
-        // this.$$('vid').src = stream;
-
-        var remoteVideo = document.createElement("video");
-        remoteVideo.srcObject = stream;
-        remoteVideo.autoplay = true;
-        remoteVideo.muted = true;
-        remoteVideo.width = '280';
-        remoteVideo.id = stream.id;
-        this.$$('#vid').append(remoteVideo);*/
         window.db = {}
         window.db = new Dexie("VideosDB");
         window.db.version(2).stores({
@@ -235,7 +226,6 @@ class Board extends Component {
         window.addEventListener('load', this.fitStageIntoParentContainer);
         window.addEventListener('resize', this.fitStageIntoParentContainer);
         this.$$('#board').css({ height: this.$$('#uploaded').height() })
-        //console.log('>>>>>>>>>>>>', this.$$('#uploaded'))
     }
 
     componentWillUnmount() {
@@ -260,7 +250,7 @@ class Board extends Component {
             this.setState({ scale: scale })
             this.setState({ width: this.$$('#board').width(), height: this.$$('#board').width() * this.state.ratio }, () => {
                 this.stage.current.width(this.$$('#board').width());
-                console.log(this.state.width, this.state.height)
+                //console.log(this.state.width, this.state.height)
                 this.stage.current.height(this.$$('#board').width() * this.state.ratio);
                 this.stage.current.scale({ x: scale, y: scale });
                 this.stage.current.draw()
@@ -294,23 +284,24 @@ class Board extends Component {
     }
 
     progress() {
-        //    console.log(this.props.progressShow)
-        if (this.props.progressShow || (this.props.upload && !this.props.upload.converted)) {
-            return (
-                <Preloader color="red" />
-            )
-        } else {
-            return (
-                <div class="upload-btn">
-                    <label for="file-input">
-                        <div style={{ float: 'right' }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" /></svg>
-                        </div>
+        if (this.props.isPresenter || this.props.isAdmin) {
+            if (this.props.progressShow || (this.props.upload && !this.props.upload.converted)) {
+                return (
+                    <Preloader color="red" />
+                )
+            } else {
+                return (
+                    <div class="upload-btn">
+                        <label for="file-input">
+                            <div style={{ float: 'right' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" /></svg>
+                            </div>
 
-                    </label>
-                    <input id="file-input" className="file-input" type="file" name="resume" accept="application/pdf" onInput={(e) => { this.props.uploader(e.target.files[0]); this.setState({ upload: null }) }} />
-                </div>
-            )
+                        </label>
+                        <input id="file-input" className="file-input" type="file" name="resume" accept="application/pdf" onInput={(e) => { this.props.uploader(e.target.files[0]); this.setState({ upload: null }) }} />
+                    </div>
+                )
+            }
         }
     }
 
@@ -366,7 +357,7 @@ class Board extends Component {
     }
 
     handleClick(e) {
-        console.log(e)
+        //console.log(e)
         this.setState({ displayColorPicker: !this.state.displayColorPicker })
     };
 
@@ -375,7 +366,7 @@ class Board extends Component {
     };
 
     handleChange(color, event) {
-        console.log(color, event)
+        //console.log(color, event)
         this.setState({ color: color.hex, pointerEnabled: false })
     }
 
@@ -422,12 +413,12 @@ class Board extends Component {
 
     recorder() {
         var self = this;
-        console.log('Record started')
+        //console.log('Record started')
         var canvas = this.layer.current.getCanvas()._canvas;
         window.recorder = {}
         const audioMixer = new MultiStreamsMixer([this.props.localStream, this.props.remoteStream]);
 
-        console.log(audioMixer.getMixedStream())
+        //console.log(audioMixer.getMixedStream())
         let combined = new MediaStream([...canvas.captureStream(5).getTracks(), ...audioMixer.getMixedStream().getTracks()]);
         window.recorder = new MediaRecorder(combined) //([this.props.remoteStream , canvas.captureStream()] )
         var chunks = [];
@@ -440,7 +431,7 @@ class Board extends Component {
             var blob = new Blob(chunks, { type: 'video/mp4' });
             var url = URL.createObjectURL(blob);
             window.db.videos.add({ blob: blob }).then(function () {
-                console.log('Blob Stored ...')
+                //console.log('Blob Stored ...')
             }).catch(function (e) {
                 alert("Error: " + (e.stack || e));
             });
@@ -497,6 +488,36 @@ class Board extends Component {
         }
     }
 
+    boardControl(popover, cover) {
+        if (this.props.isWriter || this.props.isPresenter || this.props.isAdmin) {
+            return (
+                <div>
+                    <a onClick={() => this.togglePointer()}>
+                        {!this.state.pointerEnabled ?
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="3" y1="3" x2="21" y2="21" /><path d="M14.828 9.172a4 4 0 0 1 1.172 2.828" /><path d="M17.657 6.343a8 8 0 0 1 1.635 8.952" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
+                            :
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="12" y1="12" x2="12" y2="12.01" /><path d="M14.828 9.172a4 4 0 0 1 0 5.656" /><path d="M17.657 6.343a8 8 0 0 1 0 11.314" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
+                        }
+                    </a>
+                    <a onClick={this.handleClick}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" /><line x1="13.5" y1="6.5" x2="17.5" y2="10.5" /></svg>
+                    </a>
+                    {this.state.displayColorPicker ? <div style={popover}>
+                        <div style={cover} onClick={this.handleClose} />
+                        <CompactPicker onChange={this.handleChange} />
+                    </div> : null}
+                    <a onClick={() => this.undo()}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 13l-4 -4l4 -4m-4 4h11a4 4 0 0 1 0 8h-1" /></svg>
+                    </a>
+                    <a onClick={() => this.trash()}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                    </a>
+
+                </div>
+            )
+        }
+    }
+
 
     render() {
         const popover = {
@@ -517,29 +538,8 @@ class Board extends Component {
             <React.Fragment>
                 <Card>
                     <CardHeader>
-                        <div>
-                            <a onClick={() => this.togglePointer()}>
-                                {!this.state.pointerEnabled ?
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="3" y1="3" x2="21" y2="21" /><path d="M14.828 9.172a4 4 0 0 1 1.172 2.828" /><path d="M17.657 6.343a8 8 0 0 1 1.635 8.952" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
-                                    :
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="12" y1="12" x2="12" y2="12.01" /><path d="M14.828 9.172a4 4 0 0 1 0 5.656" /><path d="M17.657 6.343a8 8 0 0 1 0 11.314" /><path d="M9.168 14.828a4 4 0 0 1 0 -5.656" /><path d="M6.337 17.657a8 8 0 0 1 0 -11.314" /></svg>
-                                }
-                            </a>
-                            <a onClick={this.handleClick}>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" /><line x1="13.5" y1="6.5" x2="17.5" y2="10.5" /></svg>
-                            </a>
-                            {this.state.displayColorPicker ? <div style={popover}>
-                                <div style={cover} onClick={this.handleClose} />
-                                <CompactPicker onChange={this.handleChange} />
-                            </div> : null}
-                            <a onClick={() => this.undo()}>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 13l-4 -4l4 -4m-4 4h11a4 4 0 0 1 0 8h-1" /></svg>
-                            </a>
-                            <a onClick={() => this.trash()}>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
-                            </a>
 
-                        </div>
+                        {this.boardControl(popover, cover)}
 
                         {this.progress()}
 

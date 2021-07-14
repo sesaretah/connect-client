@@ -25,14 +25,15 @@ const RoomShow = (props) => {
 
     function videoCard() {
         var d = 'none'
-        if (props.ionActive) {
-            d = 'block'
+        if (props.ionActive || props.vActive) {
+            d = 'flex'
         } 
         return (
             <Card style={{ display: d, background: '#5d5d5f', borderRadius: '0' }}>
-                <CardContent id='videos'>
+                <CardContent id='videos' style={{minHeight: '210px', display: 'flex', flexWrap: 'wrap'}}>
                     {props.ionVideos()}
-                    <div id="remoteVideos"></div>
+                    
+                    <div id="remoteVideos" ></div>
                 </CardContent>
             </Card>
         )
@@ -56,14 +57,14 @@ const RoomShow = (props) => {
 
     return (
 
-        <Page id='main-page'>
+        <Page id='main-page' >
             <Navbar title={dict.home} >
                 <Link panelOpen="right">
                     <Icon f7="bars"></Icon>
                 </Link>
             </Navbar>
             {videoCard()}
-
+            
             <Board
                 wsSend={props.wsSend}
                 line={props.line}
@@ -86,6 +87,9 @@ const RoomShow = (props) => {
                 remoteStream={props.remoteStream}
                 localStream={props.localStream}
                 isAdmin={props.isAdmin}
+                isPresenter={props.isPresenter}
+                isWriter={props.isWriter}
+
             />
             {screenCard()}
             <div id='mixedaudio'></div>

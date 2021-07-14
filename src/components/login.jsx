@@ -59,6 +59,13 @@ const Login = (props) => {
             )
         }
     }
+
+    function casButton() {
+        return (
+            <Button fill className='fs-11 external f-color-black bg-teal' href="https://auth.ut.ac.ir:8443/cas/login?service=https%3A%2F%2Fconnect.ut.ac.ir%2Fusers%2Fservice" animate={false} ignoreCache={true}>{dict.cas} </Button>
+
+        )
+    }
     return (
         <Page loginScreen>
             <LoginScreenTitle> </LoginScreenTitle>
@@ -87,7 +94,10 @@ const Login = (props) => {
                 {isSigningUp('passwordConfirmation')}
             </List>
             <List>
-                    {loginButton()}
+                {loginButton()}
+            </List>
+            <List>
+                {casButton()}
             </List>
         </Page>
     )

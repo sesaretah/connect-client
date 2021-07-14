@@ -1,28 +1,53 @@
-import Janus from "../janus.js";
-export function sessionCreate(room) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.sessionCreate = sessionCreate;
+exports.registerUsername = registerUsername;
+exports.removeParticipant = removeParticipant;
+exports.addParticipant = addParticipant;
+exports.exisitingParticipant = exisitingParticipant;
+exports.participantDisplay = participantDisplay;
+exports.participantChangeStatus = participantChangeStatus;
+exports.participantChangeRoom = participantChangeRoom;
+exports.toggleMute = toggleMute;
+exports.forceMute = forceMute;
+exports.exitAudioRoom = exitAudioRoom;
+
+var _janus = _interopRequireDefault(require("../janus.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(source, true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(source).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function sessionCreate(room) {
   var self = this;
-  Janus.init({
+
+  _janus["default"].init({
     debug: "none",
-    callback: function () {
-      var janus = new Janus({
+    callback: function callback() {
+      var janus = new _janus["default"]({
         server: self.state.server,
-        success: function () {
+        success: function success() {
           // Attach to AudioBridge plugin
           janus.attach({
             plugin: "janus.plugin.audiobridge",
             opaqueId: self.state.opaqueId,
-            success: function (pluginHandle) {
+            success: function success(pluginHandle) {
               //$('#details').remove();
-              self.setState({ mixertest: pluginHandle });
-              Janus.log(
-                "Plugin attached! (" +
-                  self.state.mixertest.getPlugin() +
-                  ", id=" +
-                  self.state.mixertest.getId() +
-                  ")"
-              );
-              self.registerUsername(room);
-              // Prepare the username registration
+              self.setState({
+                mixertest: pluginHandle
+              });
+
+              _janus["default"].log("Plugin attached! (" + self.state.mixertest.getPlugin() + ", id=" + self.state.mixertest.getId() + ")");
+
+              self.registerUsername(room); // Prepare the username registration
+
               /*
                                     $('#audiojoin').removeClass('hide').show();
                                     $('#registernow').removeClass('hide').show();
@@ -35,100 +60,97 @@ export function sessionCreate(room) {
                                         });
                                     */
             },
-            error: function (error) {
-              Janus.error("  -- Error attaching plugin...", error);
-              //bootbox.alert("Error attaching plugin... " + error);
+            error: function error(_error) {
+              _janus["default"].error("  -- Error attaching plugin...", _error); //bootbox.alert("Error attaching plugin... " + error);
+
             },
-            consentDialog: function (on) {
-              Janus.debug(
-                "Consent dialog should be " + (on ? "on" : "off") + " now"
-              );
+            consentDialog: function consentDialog(on) {
+              _janus["default"].debug("Consent dialog should be " + (on ? "on" : "off") + " now");
             },
-            iceState: function (state) {
-              Janus.log("ICE state changed to " + state);
+            iceState: function iceState(state) {
+              _janus["default"].log("ICE state changed to " + state);
             },
-            mediaState: function (medium, on) {
-              Janus.log(
-                "Janus " +
-                  (on ? "started" : "stopped") +
-                  " receiving our " +
-                  medium
-              );
+            mediaState: function mediaState(medium, on) {
+              _janus["default"].log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
             },
-            webrtcState: function (on) {
-              Janus.log(
-                "Janus says our WebRTC PeerConnection is " +
-                  (on ? "up" : "down") +
-                  " now"
-              );
+            webrtcState: function webrtcState(on) {
+              _janus["default"].log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
             },
-            onmessage: function (msg, jsep) {
-              Janus.debug(" ::: Got a message :::", msg);
+            onmessage: function onmessage(msg, jsep) {
+              _janus["default"].debug(" ::: Got a message :::", msg);
+
               var event = msg["audiobridge"];
-              Janus.debug("Event: " + event);
+
+              _janus["default"].debug("Event: " + event);
+
               if (event) {
                 //console.log(event, msg);
                 if (event == "talking") {
                   self.participantChangeStatus(msg["id"], true);
                 }
+
                 if (event == "stopped-talking") {
                   self.participantChangeStatus(msg["id"], false);
                 }
+
                 if (event === "joined") {
                   // Successfully joined, negotiate WebRTC now
                   if (msg["id"]) {
                     self.setState({
-                      myid: msg["id"],
+                      myid: msg["id"]
                     });
-                    Janus.log(
-                      "Successfully joined room " +
-                        msg["room"] +
-                        " with ID " +
-                        self.state.myid
-                    );
-                    self.addParticipant(
-                      msg["id"],
-                      self.state.fullname +
-                        "§" +
-                        self.state.userUUID +
-                        "§" +
-                        self.state.userColor
-                    );
+
+                    _janus["default"].log("Successfully joined room " + msg["room"] + " with ID " + self.state.myid);
+
+                    self.addParticipant(msg["id"], self.state.fullname + "§" + self.state.userUUID + "§" + self.state.userColor);
+
                     if (!self.state.webrtcUp) {
-                      self.setState({ webrtcUp: true });
-                      // Publish our stream
+                      self.setState({
+                        webrtcUp: true
+                      }); // Publish our stream
+
                       self.state.mixertest.createOffer({
                         media: {
                           video: false,
-                          audio: { echoCancellation: true },
-                        }, // This is an audio only room
-                        success: function (jsep) {
-                          Janus.debug("Got SDP!", jsep);
-                          var publish = { request: "configure", muted: true };
+                          audio: {
+                            echoCancellation: true
+                          }
+                        },
+                        // This is an audio only room
+                        success: function success(jsep) {
+                          _janus["default"].debug("Got SDP!", jsep);
+
+                          var publish = {
+                            request: "configure",
+                            muted: true
+                          };
                           self.state.mixertest.send({
                             message: publish,
-                            jsep: jsep,
+                            jsep: jsep
                           });
                         },
-                        error: function (error) {
-                          Janus.error("WebRTC error:", error);
-                          // bootbox.alert("WebRTC error... " + error.message);
-                        },
+                        error: function error(_error2) {
+                          _janus["default"].error("WebRTC error:", _error2); // bootbox.alert("WebRTC error... " + error.message);
+
+                        }
                       });
                     }
-                  }
-                  // Any room participant?
+                  } // Any room participant?
+
+
                   if (msg["participants"]) {
                     var list = msg["participants"];
-                    Janus.debug("Got a list of participants:", list);
+
+                    _janus["default"].debug("Got a list of participants:", list);
+
                     for (var f in list) {
                       var id = list[f]["id"];
                       var display = list[f]["display"];
                       var setup = list[f]["setup"];
-                      var muted = list[f]["muted"];
-                      //console.log("%%%%%%%%", list[f]);
-                      self.addParticipant(list[f]["id"], list[f]["display"]);
-                      //self.newRemoteFeed(id, display, audio, video);
+                      var muted = list[f]["muted"]; //console.log("%%%%%%%%", list[f]);
+
+                      self.addParticipant(list[f]["id"], list[f]["display"]); //self.newRemoteFeed(id, display, audio, video);
+
                       /*
                                                     Janus.debug("  >> [" + id + "] " + display + " (setup=" + setup + ", muted=" + muted + ")");
                                                     if ($('#rp' + id).length === 0) {
@@ -152,45 +174,27 @@ export function sessionCreate(room) {
                 } else if (event === "roomchanged") {
                   // The user switched to a different room
                   self.setState({
-                    myid: msg["id"],
+                    myid: msg["id"]
                   });
-                  Janus.log(
-                    "Moved to room " +
-                      msg["room"] +
-                      ", new ID: " +
-                      self.state.myid
-                  );
-                  // Any room participant?
+
+                  _janus["default"].log("Moved to room " + msg["room"] + ", new ID: " + self.state.myid); // Any room participant?
                   // $('#list').empty();
+
+
                   if (msg["participants"]) {
                     var list = msg["participants"];
-                    Janus.debug("Got a list of participants:", list);
+
+                    _janus["default"].debug("Got a list of participants:", list);
+
                     for (var f in list) {
                       var id = list[f]["id"];
                       var display = list[f]["display"];
                       var setup = list[f]["setup"];
-                      var muted = list[f]["muted"];
-                      //console.log(">>>>>>", list[f]);
-                      self.addParticipant(
-                        msg["id"],
-                        self.state.fullname +
-                          "§" +
-                          self.state.userUUID +
-                          "§" +
-                          self.state.userColor
-                      );
+                      var muted = list[f]["muted"]; //console.log(">>>>>>", list[f]);
 
-                      Janus.debug(
-                        "  >> [" +
-                          id +
-                          "] " +
-                          display +
-                          " (setup=" +
-                          setup +
-                          ", muted=" +
-                          muted +
-                          ")"
-                      );
+                      self.addParticipant(msg["id"], self.state.fullname + "§" + self.state.userUUID + "§" + self.state.userColor);
+
+                      _janus["default"].debug("  >> [" + id + "] " + display + " (setup=" + setup + ", muted=" + muted + ")");
                       /*
                                                      if ($('#rp' + id).length === 0) {
                                                          // Add to the participants list
@@ -208,40 +212,36 @@ export function sessionCreate(room) {
                                                      else
                                                          $('#rp' + id + ' > i.absetup').removeClass('hide').show();
                                                          */
+
                     }
                   }
                 } else if (event === "destroyed") {
                   // The room has been destroyed
-                  Janus.warn("The room has been destroyed!");
+                  _janus["default"].warn("The room has been destroyed!");
                 } else if (event === "event") {
                   //console.log('Participant...', msg)
                   if (msg["participants"]) {
                     var list = msg["participants"];
-                    Janus.debug("Got a list of participants:", list);
+
+                    _janus["default"].debug("Got a list of participants:", list);
+
                     for (var f in list) {
                       var id = list[f]["id"];
                       var display = list[f]["display"];
                       var setup = list[f]["setup"];
                       var muted = list[f]["muted"];
                       var talking = list[f]["talking"];
-                      Janus.debug(
-                        "  >> [" +
-                          id +
-                          "] " +
-                          display +
-                          " (setup=" +
-                          setup +
-                          ", muted=" +
-                          muted +
-                          ")"
-                      );
-                      //console.log("%%%%%%%%", list);
-                      if (talking) {
-                        //console.log("%%%%%%%%",list[f]["id"],"is talking ...");
+
+                      _janus["default"].debug("  >> [" + id + "] " + display + " (setup=" + setup + ", muted=" + muted + ")"); //console.log("%%%%%%%%", list);
+
+
+                      if (talking) {//console.log("%%%%%%%%",list[f]["id"],"is talking ...");
                       }
+
                       if (muted) {
                         self.participantChangeStatus(list[f]["id"], false);
                       }
+
                       self.addParticipant(list[f]["id"], list[f]["display"]);
                       /*
                                                     if ($('#rp' + id).length === 0) {
@@ -262,45 +262,45 @@ export function sessionCreate(room) {
                                                         */
                     }
                   } else if (msg["error"]) {
-                    if (msg["error_code"] === 485) {
-                      // This is a "no such room" error: give a more meaningful description
-                    } else {
-                    }
+                    if (msg["error_code"] === 485) {// This is a "no such room" error: give a more meaningful description
+                    } else {}
+
                     return;
-                  }
-                  // Any new feed to attach to?
+                  } // Any new feed to attach to?
+
+
                   if (msg["leaving"]) {
                     // One of the participants has gone away?
                     var leaving = msg["leaving"];
                     self.removeParticipant(leaving);
-                    Janus.log(
-                      "Participant left: " +
-                        leaving +
-                        " elements with ID #rp" +
-                        leaving +
-                        ")"
-                    );
-                    //$('#rp' + leaving).remove();
+
+                    _janus["default"].log("Participant left: " + leaving + " elements with ID #rp" + leaving + ")"); //$('#rp' + leaving).remove();
+
                   }
                 }
               }
+
               if (jsep) {
-                Janus.debug("Handling SDP as well...", jsep);
-                self.state.mixertest.handleRemoteJsep({ jsep: jsep });
+                _janus["default"].debug("Handling SDP as well...", jsep);
+
+                self.state.mixertest.handleRemoteJsep({
+                  jsep: jsep
+                });
               }
             },
-            onlocalstream: function (stream) {
-              Janus.debug(" ::: Got a local stream :::", stream);
-              //console.log("Local stream ******", stream);
+            onlocalstream: function onlocalstream(stream) {
+              _janus["default"].debug(" ::: Got a local stream :::", stream); //console.log("Local stream ******", stream);
               //console.log("Local stream ******", stream.getTracks());
-              self.setState({ localStream: stream });
 
-              // We're not going to attach the local audio stream
+
+              self.setState({
+                localStream: stream
+              }); // We're not going to attach the local audio stream
               // $('#audiojoin').hide();
               // $('#room').removeClass('hide').show();
               //$('#participant').removeClass('hide').html(myusername).show();
             },
-            onremotestream: function (stream) {
+            onremotestream: function onremotestream(stream) {
               // $('#room').removeClass('hide').show();
               // var addButtons = false;
               /// if ($('#roomaudio').length === 0) {
@@ -322,68 +322,66 @@ export function sessionCreate(room) {
               //       mixertest.send({ message: { request: "configure", muted: !audioenabled } });
               //  }).removeClass('hide').show();
               if (self.$$("#roomaudio").length === 0) {
-                self
-                  .$$("#mixedaudio")
-                  .append(
-                    '<audio class="rounded centered" id="roomaudio" width="100%" height="100%" autoplay/>'
-                  );
-                Janus.attachMediaStream(
-                  document.getElementById("roomaudio"),
-                  stream
-                );
-                self.setState({ remoteStream: stream });
+                self.$$("#mixedaudio").append('<audio class="rounded centered" id="roomaudio" width="100%" height="100%" autoplay/>');
+
+                _janus["default"].attachMediaStream(document.getElementById("roomaudio"), stream);
+
+                self.setState({
+                  remoteStream: stream
+                });
               }
             },
-            oncleanup: function () {
+            oncleanup: function oncleanup() {
               //  webrtcUp = false;
-              Janus.log(" ::: Got a cleanup notification :::");
-              //$('#participant').empty().hide();
+              _janus["default"].log(" ::: Got a cleanup notification :::"); //$('#participant').empty().hide();
               //$('#list').empty();
               //$('#mixedaudio').empty();
               //$('#room').hide();
-            },
+
+            }
           });
         },
-        error: function (error) {
-          //   Janus.error(error);
+        error: function error(_error3) {//   Janus.error(error);
           //console.log(error);
         },
-        destroyed: function () {
+        destroyed: function destroyed() {
           window.location.reload();
-        },
+        }
       });
-    },
+    }
   });
 }
 
-export function registerUsername(room) {
+function registerUsername(room) {
   var self = this;
   var register = {
     request: "join",
     room: room,
     pin: self.state.pin,
-    display:
-      self.state.fullname +
-      " §" +
-      self.state.userUUID +
-      "§" +
-      self.state.userColor,
+    display: self.state.fullname + " §" + self.state.userUUID + "§" + self.state.userColor
   };
-  self.state.mixertest.send({ message: register });
-  self.setState({ myId: self.state.mixertest.id });
-}
-
-export function removeParticipant(id) {
-  var self = this;
+  self.state.mixertest.send({
+    message: register
+  });
   self.setState({
-    participants: self.state.participants.filter((item) => item.id !== id),
+    myId: self.state.mixertest.id
   });
 }
 
-export function addParticipant(id, p) {
+function removeParticipant(id) {
+  var self = this;
+  self.setState({
+    participants: self.state.participants.filter(function (item) {
+      return item.id !== id;
+    })
+  });
+}
+
+function addParticipant(id, p) {
   //console.log("Adding Participants ...", id, p);
   var self = this;
   var participant = p.split("§");
+
   if (this.exisitingParticipant(participant[1])) {
     self.setState({
       participants: self.state.participants.concat({
@@ -392,18 +390,19 @@ export function addParticipant(id, p) {
         uuid: participant[1],
         userColor: participant[2],
         role: "listener",
-        current: "stopped-talking",
-      }),
+        current: "stopped-talking"
+      })
     });
-  }
-  //console.log("participant added:", participant[1]);
+  } //console.log("participant added:", participant[1]);
+
 }
 
-export function exisitingParticipant(participantId) {
+function exisitingParticipant(participantId) {
   var self = this;
-  var exisiting = self.state.participants.filter(
-    (item) => item.uuid === participantId
-  );
+  var exisiting = self.state.participants.filter(function (item) {
+    return item.uuid === participantId;
+  });
+
   if (exisiting.length === 0) {
     return true;
   } else {
@@ -411,11 +410,12 @@ export function exisitingParticipant(participantId) {
   }
 }
 
-export function participantDisplay(participantId) {
+function participantDisplay(participantId) {
   var self = this;
-  var exisiting = self.state.participants.filter(
-    (item) => item.uuid === participantId
-  );
+  var exisiting = self.state.participants.filter(function (item) {
+    return item.uuid === participantId;
+  });
+
   if (exisiting.length === 0) {
     return "";
   } else {
@@ -423,8 +423,9 @@ export function participantDisplay(participantId) {
   }
 }
 
-export function participantChangeStatus(participantId, status) {
+function participantChangeStatus(participantId, status) {
   //console.log(participantId, status)
+
   /*
   var self = this;
   var participants = self.state.participants;
@@ -449,17 +450,16 @@ export function participantChangeStatus(participantId, status) {
       }
     }
   }*/
-
-  this.setState((prevState) => ({
-    talking: {
-      ...prevState.talking, 
-      [participantId]: status, 
-    },
-  }));
+  this.setState(function (prevState) {
+    return {
+      talking: _objectSpread({}, prevState.talking, _defineProperty({}, participantId, status))
+    };
+  });
 }
 
-export function participantChangeRoom(participantId, room) {
+function participantChangeRoom(participantId, room) {
   //console.log(participantId, room)
+
   /*
   var self = this;
   var participants = self.state.participants;
@@ -484,37 +484,45 @@ export function participantChangeRoom(participantId, room) {
       }
     }
   }*/
-  this.setState((prevState) => ({
-    participantRoom: {
-      ...prevState.participantRoom, 
-      [participantId]: room, 
-    },
-  }));
+  this.setState(function (prevState) {
+    return {
+      participantRoom: _objectSpread({}, prevState.participantRoom, _defineProperty({}, participantId, room))
+    };
+  });
 }
 
-export function toggleMute() {
+function toggleMute() {
   var self = this;
   this.state.mixertest.send({
-    message: { request: "configure", muted: self.state.muted },
-  });
-  //console.log('muted', this.state.mixertest)
+    message: {
+      request: "configure",
+      muted: self.state.muted
+    }
+  }); //console.log('muted', this.state.mixertest)
   //if(self.state.muted){
-  self.participantChangeStatus(this.state.myId, false);
-  //}
+
+  self.participantChangeStatus(this.state.myId, false); //}
 }
 
-export function forceMute() {
+function forceMute() {
   var self = this;
   this.state.mixertest.send({
-    message: { request: "configure", muted: true },
+    message: {
+      request: "configure",
+      muted: true
+    }
   });
-
   self.participantChangeStatus(this.state.myId, false);
 }
 
-export function exitAudioRoom() {
+function exitAudioRoom() {
   var self = this;
+
   if (this.state.mixertest) {
-    this.state.mixertest.send({ message: { request: "unpublish" } });
+    this.state.mixertest.send({
+      message: {
+        request: "unpublish"
+      }
+    });
   }
 }

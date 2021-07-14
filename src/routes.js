@@ -24,6 +24,10 @@ export default [
     component: HomePage,
   },
   {
+    path: '/:token',
+    component: HomePage,
+  },
+  {
     path: '/login/',
     component: Login,
   },

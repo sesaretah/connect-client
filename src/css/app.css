@@ -761,10 +761,9 @@ margin-left: 2px !important;
 
 .icon-bar {
   width: 50px;
-  /* background-image: linear-gradient(rgb(10, 9, 66), rgb(13, 12, 88), rgb(55, 197, 36));*/
+   background-image: linear-gradient(to right, rgb(99, 30, 112), rgb(67, 17, 67));
   /*background-color: #44475a;*/
   background-color: #5a2375;
-  height: inherit;
   float: right;
   text-align: center;
   padding-top: 15px;
@@ -775,7 +774,7 @@ margin-left: 2px !important;
   width: 35px;
   height: 35px;
   margin: auto;
-  border-radius: 50%;
+  border-radius: 50%; 
   background-color:rgba(141, 139, 139, 0.5);
   margin-bottom: 10px;
 }
@@ -841,6 +840,15 @@ margin-left: 2px !important;
   margin-left: 10px;
   margin-top: 3px;
 }
+
+.right-icon-6 {
+  position: absolute;
+  left: 100px;
+  margin-left: 10px;
+  margin-top: 3px;
+} 
+
+
 .upload-btn>input {
   display: none;
 }
@@ -862,4 +870,18 @@ margin-left: 2px !important;
 
 .frame  {
   margin-bottom: -50px;
+}
+
+
+#remoteVideos video {
+  max-width: 320px;
+  width: 100%;
+  height: auto;
+  float: right;
+}
+
+#selfVideos video {
+  max-width: 160px;
+  width: 100%;
+  height: auto;
 }

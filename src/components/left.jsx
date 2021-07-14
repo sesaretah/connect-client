@@ -4,7 +4,7 @@ import { Page, Navbar, List, ListInput, Row, Col, ListItem, Preloader, Block, Ca
 import { dict } from '../Dict';
 import { Client, LocalStream, RemoteStream } from 'ion-sdk-js';
 import { IonSFUJSONRPCSignal } from 'ion-sdk-js/lib/signal/json-rpc-impl';
-import { uuid } from 'uuidv4';
+import { v4 as uuidv4 } from 'uuid';
 
 import moment from 'moment'
 
@@ -27,7 +27,7 @@ class Left extends Component {
 
     componentDidUpdate(prevProps) {
         if (prevProps.chats !== this.props.chats) {
-            console.log(this.props.chats)
+            //console.log(this.props.chats)
         }
     }
 
@@ -59,7 +59,7 @@ class Left extends Component {
     chatItems() {
         var result = []
         this.props.chats.slice(0).reverse().map((chat) => {
-            console.log(chat)
+            //console.log(chat)
             result.push(
                 <div class="item-content">
                     <div class="item-inner">
@@ -92,7 +92,7 @@ class Left extends Component {
                         type="textarea"
                         placeholder={dict.write_here}
                         onChange={(e) => {
-                            this.handleChange({ item: { content: e.target.value, name: this.props.name, time: Date.now(), uuid: uuid() } })
+                            this.handleChange({ item: { content: e.target.value, name: this.props.name, time: Date.now(), uuid: uuidv4() } })
                         }} />
                 </List>
                 <Row>
